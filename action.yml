@@ -1,0 +1,140 @@
+name: 'Governance Scan'
+description: 'AI governance scanner for codebases. Scores enforcement maturity, context hygiene, and automation readiness.'
+author: 'Douglas Walseth'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path to the repository to scan (relative to workspace root)'
+    required: false
+    default: '.'
+  comment:
+    description: 'Post scan results as a PR comment (true/false)'
+    required: false
+    default: 'true'
+
+outputs:
+  score:
+    description: 'Overall governance score (0-100)'
+    value: ${{ steps.scan.outputs.score }}
+  grade:
+    description: 'Letter grade (A-F)'
+    value: ${{ steps.scan.outputs.grade }}
+  json:
+    description: 'Full scan results as JSON'
+    value: ${{ steps.scan.outputs.json }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install governance-scan
+      shell: bash
+      run: pip install "${{ github.action_path }}"
+
+    - name: Run scan
+      id: scan
+      shell: bash
+      run: |
+        SCAN_PATH="${{ github.workspace }}/${{ inputs.path }}"
+        JSON_OUTPUT=$(governance-scan --json "$SCAN_PATH")
+        SCORE=$(echo "$JSON_OUTPUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['score'])")
+        GRADE=$(echo "$JSON_OUTPUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['grade'])")
+
+        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        echo "grade=$GRADE" >> "$GITHUB_OUTPUT"
+
+        # Store JSON in output (escape newlines)
+        EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        echo "json<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
+        echo "$JSON_OUTPUT" >> "$GITHUB_OUTPUT"
+        echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+        # Generate markdown for PR comment
+        HUMAN_OUTPUT=$(governance-scan --no-color "$SCAN_PATH")
+
+        # Build recommendations list
+        RECS=$(echo "$JSON_OUTPUT" | python3 -c "
+        import sys, json
+        data = json.load(sys.stdin)
+        for i, r in enumerate(data.get('recommendations', []), 1):
+            print(f'{i}. {r}')
+        ")
+
+        # Build category table
+        CATS=$(echo "$JSON_OUTPUT" | python3 -c "
+        import sys, json
+        data = json.load(sys.stdin)
+        for cat in data.get('categories', {}).values():
+            print(f'| {cat[\"name\"]} | {cat[\"score\"]}/100 |')
+        ")
+
+        CTA_ASSESS=$(echo "$JSON_OUTPUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['cta']['assessment'])")
+        CTA_ENT=$(echo "$JSON_OUTPUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['cta']['enterprise'])")
+
+        {
+          echo "COMMENT_BODY<<COMMENT_EOF_$EOF_MARKER"
+          echo "## Governance Scan Results"
+          echo ""
+          echo "**Score:** $SCORE/100 | **Grade:** $GRADE"
+          echo ""
+          echo "| Category | Score |"
+          echo "|----------|-------|"
+          echo "$CATS"
+          echo ""
+          if [ -n "$RECS" ]; then
+            echo "### Recommendations"
+            echo ""
+            echo "$RECS"
+            echo ""
+          fi
+          echo "---"
+          echo ""
+          echo "$CTA_ASSESS"
+          echo "$CTA_ENT"
+          echo "COMMENT_EOF_$EOF_MARKER"
+        } >> "$GITHUB_ENV"
+
+    - name: Post PR comment
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const body = process.env.COMMENT_BODY;
+          if (!body) {
+            core.warning('No comment body generated');
+            return;
+          }
+
+          // Find existing comment to update
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const marker = '## Governance Scan Results';
+          const existing = comments.find(c => c.body && c.body.startsWith(marker));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body: body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body,
+            });
+          }

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "governance-scan"
+version = "1.0.0"
+description = "AI governance scanner for codebases. Score enforcement maturity, context hygiene, and automation readiness."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    {name = "Douglas Walseth", email = "doug.walseth@gmail.com"},
+]
+keywords = ["governance", "ai", "enforcement", "code-quality", "static-analysis"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+governance-scan = "governance_scan.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/douglasrw/governance-scan"
+Documentation = "https://github.com/douglasrw/governance-scan#readme"
+Issues = "https://github.com/douglasrw/governance-scan/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
