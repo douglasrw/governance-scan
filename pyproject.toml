@@ -32,6 +32,8 @@ governance-scan = "governance_scan.cli:main"
 Homepage = "https://github.com/douglasrw/governance-scan"
 Documentation = "https://github.com/douglasrw/governance-scan#readme"
 Issues = "https://github.com/douglasrw/governance-scan/issues"
+"Full Assessment" = "https://walseth.ai/audit"
+"Enterprise" = "https://walseth.ai/pricing"
 
 [tool.setuptools.packages.find]
 where = ["src"]

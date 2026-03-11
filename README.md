@@ -1,6 +1,8 @@
 # governance-scan
 
+[![PyPI](https://img.shields.io/pypi/v/governance-scan.svg)](https://pypi.org/project/governance-scan/)
 [![Tests](https://github.com/douglasrw/governance-scan/actions/workflows/test.yml/badge.svg)](https://github.com/douglasrw/governance-scan/actions/workflows/test.yml)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Governance%20Scan-blue?logo=github)](https://github.com/marketplace/actions/governance-scan)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
