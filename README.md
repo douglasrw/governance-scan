@@ -1,5 +1,6 @@
 # governance-scan
 
+[![Governance Score](https://walseth.ai/api/badge/douglasrw/governance-scan)](https://walseth.ai/scan?repo=douglasrw/governance-scan)
 [![PyPI](https://img.shields.io/pypi/v/governance-scan.svg)](https://pypi.org/project/governance-scan/)
 [![Tests](https://github.com/douglasrw/governance-scan/actions/workflows/test.yml/badge.svg)](https://github.com/douglasrw/governance-scan/actions/workflows/test.yml)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Governance%20Scan-blue?logo=github)](https://github.com/marketplace/actions/governance-scan)
