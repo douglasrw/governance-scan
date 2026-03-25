@@ -486,6 +486,46 @@ class TestScanAgentConfig:
         assert ".claude/settings.json" in paths
         assert ".claude/settings.local.json" in paths
 
+    def test_copilot_instructions_detected(self, tmp_path):
+        """`.github/copilot-instructions.md` counts as agent-config maturity."""
+        gh_dir = tmp_path / ".github"
+        gh_dir.mkdir()
+        (gh_dir / "copilot-instructions.md").write_text("# Copilot Instructions\n\nUse TypeScript.\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".github/copilot-instructions.md" for e in result["files"])
+
+    def test_copilot_instructions_combined_with_claude_settings(self, tmp_path):
+        """Copilot instructions and Claude settings both contribute maturity."""
+        gh_dir = tmp_path / ".github"
+        gh_dir.mkdir()
+        (gh_dir / "copilot-instructions.md").write_text("# Instructions\n")
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "settings.json").write_text(json.dumps({"permissions": {}}))
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert ".github/copilot-instructions.md" in paths
+        assert ".claude/settings.json" in paths
+
+    def test_copilot_instructions_suppresses_recommendation(self, tmp_path):
+        """A repo with only copilot-instructions.md should not get the agent-config recommendation."""
+        gh_dir = tmp_path / ".github"
+        gh_dir.mkdir()
+        (gh_dir / "copilot-instructions.md").write_text("# Copilot Instructions\n")
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
 
 class TestScanAntiPatterns:
     def test_clean_repo(self, empty_repo):

@@ -239,6 +239,7 @@ def scan_agent_config(repo: Path) -> dict:
 
     checks = [
         ("AGENTS.md", "Agent roster"),
+        (".github/copilot-instructions.md", "Copilot instructions"),
         ("data/agents", "Agent data directory"),
         ("data/roles", "Role definitions"),
         (".claude/settings.json", "Claude settings"),
