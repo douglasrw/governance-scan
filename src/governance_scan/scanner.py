@@ -187,6 +187,8 @@ def scan_cicd(repo: Path) -> dict:
         ("Dockerfile", "Docker"),
         ("docker-compose.yml", "Docker Compose"),
         ("docker-compose.yaml", "Docker Compose"),
+        ("compose.yaml", "Docker Compose"),
+        ("compose.yml", "Docker Compose"),
     ]
 
     for path_str, name in checks:

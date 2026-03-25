@@ -188,6 +188,24 @@ class TestScanCicd:
         names = [c["name"] for c in result["configs"]]
         assert "npm scripts" in names
 
+    def test_compose_yaml_detected(self, tmp_path):
+        """compose.yaml (without docker- prefix) should be detected as Docker Compose."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / "compose.yaml").write_text("services:\n  app:\n    build: .\n")
+        result = scan_cicd(tmp_path)
+        assert result["has_ci"] is True
+        names = [c["name"] for c in result["configs"]]
+        assert "Docker Compose" in names
+
+    def test_compose_yml_detected(self, tmp_path):
+        """compose.yml (without docker- prefix) should be detected as Docker Compose."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / "compose.yml").write_text("services:\n  web:\n    image: nginx\n")
+        result = scan_cicd(tmp_path)
+        assert result["has_ci"] is True
+        names = [c["name"] for c in result["configs"]]
+        assert "Docker Compose" in names
+
     def test_npm_typecheck_and_type_check(self, tmp_path):
         """Both 'typecheck' and 'type-check' variants should be recognized."""
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
