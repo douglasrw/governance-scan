@@ -252,6 +252,15 @@ def scan_agent_config(repo: Path) -> dict:
             results["files"].append({"path": path_str, "name": name})
             results["maturity"] += 1
 
+    # .github/instructions/*.instructions.md (Copilot coding agent instructions)
+    instructions_dir = repo / ".github" / "instructions"
+    if instructions_dir.is_dir():
+        for f in sorted(instructions_dir.iterdir()):
+            if f.is_file() and f.name.endswith(".instructions.md"):
+                rel = f".github/instructions/{f.name}"
+                results["files"].append({"path": rel, "name": "GitHub instructions"})
+                results["maturity"] += 1
+
     return results
 
 

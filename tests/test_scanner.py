@@ -526,6 +526,74 @@ class TestScanAgentConfig:
         )
         assert not any("agent configuration" in r for r in recs)
 
+    def test_github_instructions_md_detected(self, tmp_path):
+        """`.github/instructions/*.instructions.md` counts as agent-config maturity."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "code-review.instructions.md").write_text("# Code Review\n\nBe thorough.\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".github/instructions/code-review.instructions.md" for e in result["files"])
+
+    def test_github_instructions_multiple_files(self, tmp_path):
+        """Multiple *.instructions.md files each contribute maturity."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "code-review.instructions.md").write_text("# Review\n")
+        (inst_dir / "testing.instructions.md").write_text("# Testing\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert ".github/instructions/code-review.instructions.md" in paths
+        assert ".github/instructions/testing.instructions.md" in paths
+
+    def test_github_instructions_non_matching_ignored(self, tmp_path):
+        """Files not matching *.instructions.md in .github/instructions/ are ignored."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "README.md").write_text("# About\n")
+        (inst_dir / "notes.txt").write_text("Just notes\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 0
+
+    def test_github_instructions_empty_dir_no_credit(self, tmp_path):
+        """An empty .github/instructions/ directory gives no credit."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 0
+
+    def test_github_instructions_combined_with_claude_settings(self, tmp_path):
+        """GitHub instructions and Claude settings both contribute maturity."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "style.instructions.md").write_text("# Style\n")
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "settings.json").write_text(json.dumps({"permissions": {}}))
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert ".github/instructions/style.instructions.md" in paths
+        assert ".claude/settings.json" in paths
+
+    def test_github_instructions_suppresses_recommendation(self, tmp_path):
+        """A repo with only .github/instructions/*.instructions.md should not get the agent-config recommendation."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "dev.instructions.md").write_text("# Dev\n")
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
 
 class TestScanAntiPatterns:
     def test_clean_repo(self, empty_repo):
