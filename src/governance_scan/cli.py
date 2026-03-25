@@ -110,7 +110,11 @@ def main():
     try:
         result = scan_repo(args.path)
     except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        if args.json_output:
+            json.dump({"error": True, "message": str(e)}, sys.stdout, indent=2)
+            print(file=sys.stdout)
+        else:
+            print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
     if args.json_output:

@@ -44,6 +44,17 @@ class TestCli:
         assert result.returncode == 1
         assert "Error" in result.stderr
 
+    def test_nonexistent_path_json(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "governance_scan.cli", "--json", "/nonexistent/path"],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 1
+        data = json.loads(result.stdout)
+        assert data["error"] is True
+        assert "message" in data
+        assert result.stderr == ""
+
     def test_version(self):
         result = subprocess.run(
             [sys.executable, "-m", "governance_scan.cli", "--version"],
