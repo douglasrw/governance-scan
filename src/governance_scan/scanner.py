@@ -285,7 +285,8 @@ def scan_anti_patterns(repo: Path) -> dict:
 
 
 def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
-                             cicd: dict, anti_patterns: dict) -> list:
+                             cicd: dict, agent_config: dict,
+                             anti_patterns: dict) -> list:
     """Generate top recommendations based on scan results."""
     recs = []
 
@@ -306,6 +307,9 @@ def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
 
     if not cicd["has_ci"]:
         recs.append("Set up CI/CD with automated testing, linting, and type checking")
+
+    if agent_config["maturity"] == 0:
+        recs.append("Add agent configuration (AGENTS.md or .claude/settings.json) to define AI agent boundaries and permissions")
 
     if anti_patterns["secrets"] > 0:
         recs.append("Remove hardcoded secrets from source code -- use environment variables instead")
@@ -397,7 +401,7 @@ def scan_repo(path: str | Path) -> dict:
         },
     }
 
-    recommendations = generate_recommendations(claude_md, hooks, tests, cicd, anti_patterns)
+    recommendations = generate_recommendations(claude_md, hooks, tests, cicd, agent_config, anti_patterns)
 
     cta = {
         "assessment": "Full assessment with EU AI Act compliance mapping: https://walseth.ai/audit",

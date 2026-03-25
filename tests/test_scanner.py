@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from governance_scan.scanner import (
+    generate_recommendations,
     scan_agent_config,
     scan_claude_md,
     scan_hooks,
@@ -376,6 +377,73 @@ class TestScanAntiPatterns:
         (tmp_path / "code.py").write_text("# TODO: fix this\n# FIXME: another\n")
         result = scan_anti_patterns(tmp_path)
         assert result["todos"] == 2
+
+
+class TestGenerateRecommendations:
+    """Tests for agent-config recommendation in generate_recommendations."""
+
+    def _defaults(self, **overrides):
+        """Return scan result dicts with sane defaults, merged with overrides."""
+        base = {
+            "claude_md": {"total_lines": 50, "structured": True, "total_rules": 5},
+            "hooks": {"l5_count": 2},
+            "tests": {"test_files": 10, "source_files": 20},
+            "cicd": {"has_ci": True},
+            "agent_config": {"maturity": 0},
+            "anti_patterns": {"secrets": 0, "todos": 5},
+        }
+        base.update(overrides)
+        return base
+
+    def test_agent_config_zero_maturity_produces_recommendation(self):
+        d = self._defaults()
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        assert any("agent configuration" in r for r in recs)
+
+    def test_agent_config_nonzero_maturity_no_recommendation(self):
+        d = self._defaults(agent_config={"maturity": 1})
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        assert not any("agent configuration" in r for r in recs)
+
+    def test_top_three_cap_preserved(self):
+        """Even with many gaps, only 3 recommendations are returned."""
+        d = self._defaults(
+            claude_md={"total_lines": 0, "structured": False, "total_rules": 0},
+            hooks={"l5_count": 0},
+            tests={"test_files": 0, "source_files": 10},
+            cicd={"has_ci": False},
+            agent_config={"maturity": 0},
+            anti_patterns={"secrets": 3, "todos": 50},
+        )
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        assert len(recs) <= 3
+
+    def test_agent_config_rec_does_not_displace_higher_priority(self):
+        """CLAUDE.md, hooks, tests recs should appear before agent-config when all are missing."""
+        d = self._defaults(
+            claude_md={"total_lines": 0, "structured": False, "total_rules": 0},
+            hooks={"l5_count": 0},
+            tests={"test_files": 0, "source_files": 10},
+            agent_config={"maturity": 0},
+        )
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        # CLAUDE.md, hooks, and tests recs take the top 3 slots
+        assert "CLAUDE.md" in recs[0]
+        assert "hook" in recs[1].lower()
+        assert "test" in recs[2].lower()
+        assert not any("agent configuration" in r for r in recs)
 
 
 class TestScanRepo:
