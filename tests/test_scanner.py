@@ -295,6 +295,43 @@ class TestScanTests:
         assert result["test_files"] == 1
         assert result["source_files"] == 1
 
+    def test_init_py_not_counted(self, tmp_path):
+        """tests/__init__.py should not inflate test file count."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "__init__.py").write_text("")
+        (tests_dir / "test_foo.py").write_text("def test_foo(): pass\n")
+        result = scan_tests(tmp_path)
+        assert result["test_files"] == 1
+
+    def test_nested_init_py_not_counted(self, tmp_path):
+        """Nested __init__.py under test dirs should not count."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        tests_dir = tmp_path / "tests"
+        sub = tests_dir / "sub"
+        sub.mkdir(parents=True)
+        (tests_dir / "__init__.py").write_text("")
+        (sub / "__init__.py").write_text("")
+        (sub / "test_bar.py").write_text("def test_bar(): pass\n")
+        result = scan_tests(tmp_path)
+        assert result["test_files"] == 1
+
+    def test_real_test_files_still_counted_with_init_py(self, tmp_path):
+        """Real test modules are counted even when __init__.py exists."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "__init__.py").write_text("")
+        (tests_dir / "test_one.py").write_text("def test_one(): pass\n")
+        (tests_dir / "test_two.py").write_text("def test_two(): pass\n")
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "app.py").write_text("x = 1\n")
+        result = scan_tests(tmp_path)
+        assert result["test_files"] == 2
+        assert result["source_files"] == 1
+
     def test_node_style_test_not_double_counted(self, tmp_path):
         """src/test.ts must not be double-counted if it also matches *.test.*."""
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)

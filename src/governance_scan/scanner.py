@@ -154,7 +154,8 @@ def scan_tests(repo: Path) -> dict:
             for f in test_path.rglob("*"):
                 if f.is_file() and f.suffix in _CODE_EXTENSIONS and not _should_skip(f):
                     seen.add(f)
-                    results["test_files"] += 1
+                    if f.name != "__init__.py":
+                        results["test_files"] += 1
 
     # Test files scattered in codebase
     test_patterns = ["test_*.py", "*_test.py", "*.spec.*", "*.test.*"]
