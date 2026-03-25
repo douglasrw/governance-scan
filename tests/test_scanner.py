@@ -122,6 +122,30 @@ class TestScanHooks:
         sources = [h["source"] for h in result["hooks"]]
         assert ".pre-commit-config.yml" in sources
 
+    def test_lefthook_yml(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / "lefthook.yml").write_text("pre-commit:\n  commands: {}\n")
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] >= 1
+        sources = [h["source"] for h in result["hooks"]]
+        assert "lefthook.yml" in sources
+
+    def test_lefthook_yaml(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / "lefthook.yaml").write_text("pre-commit:\n  commands: {}\n")
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] >= 1
+        sources = [h["source"] for h in result["hooks"]]
+        assert "lefthook.yaml" in sources
+
+    def test_dot_lefthook_yaml(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / ".lefthook.yaml").write_text("pre-commit:\n  commands: {}\n")
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] >= 1
+        sources = [h["source"] for h in result["hooks"]]
+        assert ".lefthook.yaml" in sources
+
     def test_claude_settings_hooks(self, tmp_path):
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
         claude_dir = tmp_path / ".claude"

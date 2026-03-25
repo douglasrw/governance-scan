@@ -122,13 +122,15 @@ def scan_hooks(repo: Path) -> dict:
             results["l5_count"] += 1
 
     # lefthook
-    if (repo / "lefthook.yml").exists() or (repo / ".lefthook.yml").exists():
-        results["hooks"].append({
-            "type": "lefthook",
-            "matcher": "lefthook",
-            "source": "lefthook.yml",
-        })
-        results["l5_count"] += 1
+    for lhf in ("lefthook.yml", ".lefthook.yml", "lefthook.yaml", ".lefthook.yaml"):
+        if (repo / lhf).exists():
+            results["hooks"].append({
+                "type": "lefthook",
+                "matcher": "lefthook",
+                "source": lhf,
+            })
+            results["l5_count"] += 1
+            break
 
     return results
 
