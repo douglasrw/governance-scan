@@ -103,6 +103,44 @@ class TestScanClaudeMd:
         assert result["structured"] is True
         assert result["total_rules"] == 3
 
+    def test_agents_md_counted_as_guidance(self, tmp_path):
+        """AGENTS.md alone gives governance guidance credit."""
+        (tmp_path / "AGENTS.md").write_text(
+            "# Agents\n\n"
+            "## Dispatcher\n\n"
+            "## Worker\n\n"
+            "- Must follow the task packet\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == "AGENTS.md"
+        assert result["structured"] is True
+        assert result["total_rules"] == 1
+
+    def test_agents_md_without_claude_md(self, tmp_path):
+        """Repo with AGENTS.md but no CLAUDE.md still receives structural context credit."""
+        (tmp_path / "AGENTS.md").write_text(
+            "# Agent Instructions\n\nFollow the protocol.\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+
+    def test_agents_md_combined_with_claude_md(self, tmp_path):
+        """Both CLAUDE.md and AGENTS.md contribute to totals."""
+        (tmp_path / "CLAUDE.md").write_text("# Rules\n\n## Style\n\n## Tests\n\n- Must lint\n")
+        (tmp_path / "AGENTS.md").write_text("# Agents\n\n- Never skip hooks\n")
+        result = scan_claude_md(tmp_path)
+        assert len(result["files"]) == 2
+        assert result["total_rules"] == 2
+
+    def test_no_agents_md_no_claude_md(self, empty_repo):
+        """Repo with neither AGENTS.md nor CLAUDE.md remains negative."""
+        result = scan_claude_md(empty_repo)
+        assert result["total_lines"] == 0
+        assert len(result["files"]) == 0
+
     def test_numbered_rules_dot(self, tmp_path):
         """Numbered rules with dot notation (1. Must ...) are counted."""
         (tmp_path / "CLAUDE.md").write_text(

@@ -36,7 +36,7 @@ def scan_claude_md(repo: Path) -> dict:
     """Scan for CLAUDE.md / .cursorrules and analyze structure."""
     results = {"files": [], "total_lines": 0, "total_rules": 0, "structured": False}
 
-    candidates = ["CLAUDE.md", ".claude/CLAUDE.md", ".cursorrules", ".github/copilot-instructions.md"]
+    candidates = ["CLAUDE.md", ".claude/CLAUDE.md", ".cursorrules", ".github/copilot-instructions.md", "AGENTS.md"]
     for name in candidates:
         path = repo / name
         if path.exists():
