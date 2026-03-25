@@ -56,6 +56,31 @@ class TestCli:
         assert "message" in data
         assert result.stderr == ""
 
+    def test_file_path_rejected(self, tmp_path):
+        f = tmp_path / "somefile.py"
+        f.write_text("x = 1\n")
+        result = subprocess.run(
+            [sys.executable, "-m", "governance_scan.cli", str(f)],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 1
+        assert "not a directory" in result.stderr
+        assert result.stdout == ""
+
+    def test_file_path_rejected_json(self, tmp_path):
+        f = tmp_path / "somefile.py"
+        f.write_text("x = 1\n")
+        result = subprocess.run(
+            [sys.executable, "-m", "governance_scan.cli", "--json", str(f)],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 1
+        data = json.loads(result.stdout)
+        assert data["error"] is True
+        assert data["code"] == "INVALID_REPO_ROOT"
+        assert "not a directory" in data["message"]
+        assert result.stderr == ""
+
     def test_version(self):
         result = subprocess.run(
             [sys.executable, "-m", "governance_scan.cli", "--version"],

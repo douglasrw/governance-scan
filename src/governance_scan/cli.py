@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 
 from . import __version__
@@ -106,6 +107,15 @@ def main():
     parser.add_argument("--version", action="version", version=f"governance-scan {__version__}")
 
     args = parser.parse_args()
+
+    if os.path.exists(args.path) and not os.path.isdir(args.path):
+        msg = f"Path is a file, not a directory: {args.path}"
+        if args.json_output:
+            json.dump({"error": True, "code": "INVALID_REPO_ROOT", "message": msg}, sys.stdout, indent=2)
+            print(file=sys.stdout)
+        else:
+            print(f"Error: {msg}", file=sys.stderr)
+        sys.exit(1)
 
     try:
         result = scan_repo(args.path)
