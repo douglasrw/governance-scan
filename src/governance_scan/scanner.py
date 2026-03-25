@@ -245,7 +245,7 @@ def scan_agent_config(repo: Path) -> dict:
     return results
 
 
-_ENV_TEMPLATE_NAMES = {".env.example", ".env.sample", ".env.template", ".env.dist"}
+_ENV_TEMPLATE_PREFIXES = (".env.example", ".env.sample", ".env.template", ".env.dist")
 
 
 def _is_env_file(path: Path) -> bool:
@@ -253,9 +253,10 @@ def _is_env_file(path: Path) -> bool:
 
     Template/example files (.env.example, .env.sample, etc.) are excluded
     because they typically contain placeholder values, not real secrets.
+    Suffixed variants like .env.template.local are also treated as templates.
     """
     name = path.name
-    if name in _ENV_TEMPLATE_NAMES:
+    if any(name.startswith(prefix) for prefix in _ENV_TEMPLATE_PREFIXES):
         return False
     return name == ".env" or name.startswith(".env.")
 

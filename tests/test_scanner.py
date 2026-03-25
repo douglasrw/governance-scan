@@ -457,6 +457,54 @@ class TestScanAntiPatterns:
         result = scan_anti_patterns(tmp_path)
         assert result["secrets"] == 1
 
+    def test_env_template_local_ignored(self, tmp_path):
+        """.env.template.local is a template variant and should not trigger secrets."""
+        (tmp_path / ".env.template.local").write_text(
+            'TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_example_local_ignored(self, tmp_path):
+        """.env.example.local is a template variant and should not trigger secrets."""
+        (tmp_path / ".env.example.local").write_text(
+            'API_KEY="sk-placeholder-replace-me-with-real-key"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_sample_local_ignored(self, tmp_path):
+        """.env.sample.local is a template variant and should not trigger secrets."""
+        (tmp_path / ".env.sample.local").write_text(
+            'SECRET="replace-this-with-your-secret-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_dist_local_ignored(self, tmp_path):
+        """.env.dist.local is a template variant and should not trigger secrets."""
+        (tmp_path / ".env.dist.local").write_text(
+            'PASSWORD="changeme-this-is-a-placeholder-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_real_env_local_still_detected(self, tmp_path):
+        """.env.local (no template marker) must still be flagged."""
+        (tmp_path / ".env.local").write_text(
+            'PASSWORD="super-secret-password-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] >= 1
+
+    def test_real_env_production_still_detected(self, tmp_path):
+        """.env.production must still be flagged."""
+        (tmp_path / ".env.production").write_text(
+            'TOKEN="abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] >= 1
+
 
 class TestGenerateRecommendations:
     """Tests for agent-config recommendation in generate_recommendations."""
