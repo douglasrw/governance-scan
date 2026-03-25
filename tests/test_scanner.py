@@ -133,6 +133,27 @@ class TestScanTests:
         assert result["test_files"] >= 2
         assert "tests" in result["test_dirs_found"]
 
+    def test_node_style_src_test_ts(self, tmp_path):
+        """A repo with src/test.ts should count one test file."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "scanner.ts").write_text("export const x = 1\n")
+        (src / "test.ts").write_text('import test from "node:test"\n')
+        result = scan_tests(tmp_path)
+        assert result["test_files"] == 1
+        assert result["source_files"] == 1
+
+    def test_node_style_test_not_double_counted(self, tmp_path):
+        """src/test.ts must not be double-counted if it also matches *.test.*."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        src = tmp_path / "src"
+        src.mkdir()
+        # test.test.ts matches both *.test.* and stem=="test" -- should count once
+        (src / "test.test.ts").write_text("test\n")
+        result = scan_tests(tmp_path)
+        assert result["test_files"] == 1
+
 
 class TestScanCicd:
     def test_no_ci(self, empty_repo):

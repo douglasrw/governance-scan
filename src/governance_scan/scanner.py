@@ -157,6 +157,13 @@ def scan_tests(repo: Path) -> dict:
                 seen.add(f)
                 results["test_files"] += 1
 
+    # Node-style single-entrypoint test files (e.g. src/test.ts)
+    for f in repo.rglob("test.*"):
+        if (f.is_file() and f.stem == "test" and f.suffix in _CODE_EXTENSIONS
+                and f not in seen and not _should_skip(f)):
+            seen.add(f)
+            results["test_files"] += 1
+
     # Count source files
     for f in repo.rglob("*"):
         if (f.is_file() and f.suffix in _CODE_EXTENSIONS
