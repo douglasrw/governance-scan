@@ -52,6 +52,7 @@ class TestCli:
         assert result.returncode == 1
         data = json.loads(result.stdout)
         assert data["error"] is True
+        assert data["code"] == "REPO_NOT_FOUND"
         assert "message" in data
         assert result.stderr == ""
 
