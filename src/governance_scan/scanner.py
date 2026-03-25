@@ -245,9 +245,19 @@ def scan_agent_config(repo: Path) -> dict:
     return results
 
 
+_ENV_TEMPLATE_NAMES = {".env.example", ".env.sample", ".env.template", ".env.dist"}
+
+
 def _is_env_file(path: Path) -> bool:
-    """Check if a file is a dotenv file (.env, .env.local, .env.production, etc.)."""
-    return path.name == ".env" or path.name.startswith(".env.")
+    """Check if a file is a dotenv file (.env, .env.local, .env.production, etc.).
+
+    Template/example files (.env.example, .env.sample, etc.) are excluded
+    because they typically contain placeholder values, not real secrets.
+    """
+    name = path.name
+    if name in _ENV_TEMPLATE_NAMES:
+        return False
+    return name == ".env" or name.startswith(".env.")
 
 
 def scan_anti_patterns(repo: Path) -> dict:

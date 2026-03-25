@@ -419,6 +419,44 @@ class TestScanAntiPatterns:
         result = scan_anti_patterns(tmp_path)
         assert result["secrets"] >= 1
 
+    def test_env_example_ignored(self, tmp_path):
+        """.env.example files are templates and should not trigger secret detection."""
+        (tmp_path / ".env.example").write_text(
+            'API_KEY="sk-placeholder-replace-me-with-real-key"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_sample_ignored(self, tmp_path):
+        """.env.sample files are templates and should not trigger secret detection."""
+        (tmp_path / ".env.sample").write_text(
+            'SECRET="replace-this-with-your-secret-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_template_ignored(self, tmp_path):
+        """.env.template and .env.dist files are not scanned for secrets."""
+        (tmp_path / ".env.template").write_text(
+            'TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\n'
+        )
+        (tmp_path / ".env.dist").write_text(
+            'PASSWORD="changeme-this-is-a-placeholder-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_real_env_still_detected_alongside_template(self, tmp_path):
+        """Real .env is flagged even when a .env.example exists in the same repo."""
+        (tmp_path / ".env.example").write_text(
+            'API_KEY="sk-placeholder-replace-me-with-real-key"\n'
+        )
+        (tmp_path / ".env").write_text(
+            'API_KEY="sk-live-abcdefghijklmnopqrstuvwxyz123456"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 1
+
 
 class TestGenerateRecommendations:
     """Tests for agent-config recommendation in generate_recommendations."""
