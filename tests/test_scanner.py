@@ -167,6 +167,27 @@ class TestScanCicd:
         assert "GitHub Actions" in names
 
 
+    def test_npm_type_check_script(self, tmp_path):
+        """npm scripts with 'type-check' key should be recognized."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        pkg = {"scripts": {"type-check": "tsc --noEmit", "build": "tsc"}}
+        (tmp_path / "package.json").write_text(json.dumps(pkg))
+        result = scan_cicd(tmp_path)
+        scripts = next(c["scripts"] for c in result["configs"] if c["name"] == "npm scripts")
+        assert "type-check" in scripts
+        assert "build" in scripts
+
+    def test_npm_typecheck_and_type_check(self, tmp_path):
+        """Both 'typecheck' and 'type-check' variants should be recognized."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        pkg = {"scripts": {"typecheck": "tsc", "type-check": "tsc --noEmit"}}
+        (tmp_path / "package.json").write_text(json.dumps(pkg))
+        result = scan_cicd(tmp_path)
+        scripts = next(c["scripts"] for c in result["configs"] if c["name"] == "npm scripts")
+        assert "typecheck" in scripts
+        assert "type-check" in scripts
+
+
 class TestScanAntiPatterns:
     def test_clean_repo(self, empty_repo):
         result = scan_anti_patterns(empty_repo)
