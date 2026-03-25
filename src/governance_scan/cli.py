@@ -126,6 +126,14 @@ def main():
         else:
             print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+    except PermissionError:
+        msg = f"Permission denied: {args.path}"
+        if args.json_output:
+            json.dump({"error": True, "code": "PERMISSION_DENIED", "message": msg}, sys.stdout, indent=2)
+            print(file=sys.stdout)
+        else:
+            print(f"Error: {msg}", file=sys.stderr)
+        sys.exit(1)
 
     if args.json_output:
         print(json.dumps(result, indent=2))

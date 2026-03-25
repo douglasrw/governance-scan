@@ -81,6 +81,39 @@ class TestCli:
         assert "not a directory" in data["message"]
         assert result.stderr == ""
 
+    def test_unreadable_path(self, tmp_path):
+        d = tmp_path / "noaccess"
+        d.mkdir()
+        d.chmod(0o000)
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "governance_scan.cli", str(d)],
+                capture_output=True, text=True,
+            )
+            assert result.returncode == 1
+            assert "Permission denied" in result.stderr
+            assert result.stdout == ""
+        finally:
+            d.chmod(0o700)
+
+    def test_unreadable_path_json(self, tmp_path):
+        d = tmp_path / "noaccess"
+        d.mkdir()
+        d.chmod(0o000)
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "governance_scan.cli", "--json", str(d)],
+                capture_output=True, text=True,
+            )
+            assert result.returncode == 1
+            data = json.loads(result.stdout)
+            assert data["error"] is True
+            assert data["code"] == "PERMISSION_DENIED"
+            assert "Permission denied" in data["message"]
+            assert result.stderr == ""
+        finally:
+            d.chmod(0o700)
+
     def test_version(self):
         result = subprocess.run(
             [sys.executable, "-m", "governance_scan.cli", "--version"],
