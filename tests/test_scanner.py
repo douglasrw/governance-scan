@@ -790,6 +790,78 @@ class TestScanAntiPatterns:
         result = scan_anti_patterns(tmp_path)
         assert result["secrets"] == 1
 
+    # -- case-insensitive template markers -------------------------------------
+
+    def test_env_Example_uppercase_ignored(self, tmp_path):
+        """.env.Example (uppercase E) is a template and should not trigger secrets."""
+        (tmp_path / ".env.Example").write_text(
+            'TOKEN="replace-this-placeholder-token-value-now"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_SAMPLE_uppercase_ignored(self, tmp_path):
+        """.env.SAMPLE (all caps) is a template and should not trigger secrets."""
+        (tmp_path / ".env.SAMPLE").write_text(
+            'API_KEY="replace-this-placeholder-token-value-now"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_Template_local_mixed_case_ignored(self, tmp_path):
+        """.env.Template.local (mixed case prefix) is a template."""
+        (tmp_path / ".env.Template.local").write_text(
+            'SECRET="replace-this-placeholder-token-value-now"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_local_Example_suffix_uppercase_ignored(self, tmp_path):
+        """.env.local.Example (suffix-order, uppercase) is a template."""
+        (tmp_path / ".env.local.Example").write_text(
+            'TOKEN="replace-this-placeholder-token-value-now"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_production_SAMPLE_suffix_uppercase_ignored(self, tmp_path):
+        """.env.production.SAMPLE (suffix-order, all caps) is a template."""
+        (tmp_path / ".env.production.SAMPLE").write_text(
+            'TOKEN="replace-this-placeholder-token-value-now"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_Dist_uppercase_ignored(self, tmp_path):
+        """.env.Dist (uppercase D) is a template and should not trigger secrets."""
+        (tmp_path / ".env.Dist").write_text(
+            'PASSWORD="replace-this-placeholder-token-value-now"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_real_env_still_detected_with_uppercase_template(self, tmp_path):
+        """Real .env is flagged even when .env.Example exists."""
+        (tmp_path / ".env.Example").write_text(
+            'TOKEN="replace-this-placeholder-token-value-now"\n'
+        )
+        (tmp_path / ".env").write_text(
+            'TOKEN="abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 1
+
+    def test_real_env_local_still_detected_with_uppercase_template(self, tmp_path):
+        """Real .env.local is flagged even when .env.local.Example exists."""
+        (tmp_path / ".env.local.Example").write_text(
+            'TOKEN="replace-this-placeholder-token-value-now"\n'
+        )
+        (tmp_path / ".env.local").write_text(
+            'TOKEN="abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 1
+
 
 class TestGenerateRecommendations:
     """Tests for agent-config recommendation in generate_recommendations."""

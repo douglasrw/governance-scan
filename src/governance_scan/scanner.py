@@ -277,14 +277,15 @@ def _is_env_file(path: Path) -> bool:
     .env.production.sample) are treated as templates.
     """
     name = path.name
-    # Prefix-order templates: .env.example, .env.sample.local, etc.
-    if any(name.startswith(prefix) for prefix in _ENV_TEMPLATE_PREFIXES):
+    lower = name.lower()
+    # Prefix-order templates (case-insensitive): .env.example, .env.Example, etc.
+    if any(lower.startswith(prefix) for prefix in _ENV_TEMPLATE_PREFIXES):
         return False
     # Must be a dotenv file
     if not (name == ".env" or name.startswith(".env.")):
         return False
-    # Suffix-order templates: .env.local.example, .env.production.sample, etc.
-    if any(name.endswith(suffix) for suffix in _ENV_TEMPLATE_SUFFIXES):
+    # Suffix-order templates (case-insensitive): .env.local.example, .env.local.Example, etc.
+    if any(lower.endswith(suffix) for suffix in _ENV_TEMPLATE_SUFFIXES):
         return False
     return True
 
