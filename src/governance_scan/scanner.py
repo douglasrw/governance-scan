@@ -223,6 +223,7 @@ def scan_agent_config(repo: Path) -> dict:
         ("data/agents", "Agent data directory"),
         ("data/roles", "Role definitions"),
         (".claude/settings.json", "Claude settings"),
+        (".claude/settings.local.json", "Claude local settings"),
         ("scripts/agents", "Agent scripts"),
     ]
 

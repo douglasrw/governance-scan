@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from governance_scan.scanner import (
+    scan_agent_config,
     scan_claude_md,
     scan_hooks,
     scan_tests,
@@ -186,6 +187,43 @@ class TestScanCicd:
         scripts = next(c["scripts"] for c in result["configs"] if c["name"] == "npm scripts")
         assert "typecheck" in scripts
         assert "type-check" in scripts
+
+
+class TestScanAgentConfig:
+    def test_no_agent_config(self, empty_repo):
+        result = scan_agent_config(empty_repo)
+        assert result["maturity"] == 0
+        assert len(result["files"]) == 0
+
+    def test_claude_settings_json(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "settings.json").write_text(json.dumps({"permissions": {}}))
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".claude/settings.json" for e in result["files"])
+
+    def test_claude_settings_local_json(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "settings.local.json").write_text(json.dumps({"hooks": {"PreToolUse": []}}))
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".claude/settings.local.json" for e in result["files"])
+
+    def test_both_settings_files(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "settings.json").write_text(json.dumps({"permissions": {}}))
+        (claude_dir / "settings.local.json").write_text(json.dumps({"hooks": {}}))
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert ".claude/settings.json" in paths
+        assert ".claude/settings.local.json" in paths
 
 
 class TestScanAntiPatterns:
