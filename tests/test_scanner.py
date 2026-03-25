@@ -178,6 +178,16 @@ class TestScanCicd:
         assert "type-check" in scripts
         assert "build" in scripts
 
+    def test_npm_scripts_only_has_ci(self, tmp_path):
+        """A repo with only npm scripts (no workflow files) should have has_ci=True."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        pkg = {"scripts": {"test": "jest", "lint": "eslint ."}}
+        (tmp_path / "package.json").write_text(json.dumps(pkg))
+        result = scan_cicd(tmp_path)
+        assert result["has_ci"] is True
+        names = [c["name"] for c in result["configs"]]
+        assert "npm scripts" in names
+
     def test_npm_typecheck_and_type_check(self, tmp_path):
         """Both 'typecheck' and 'type-check' variants should be recognized."""
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)

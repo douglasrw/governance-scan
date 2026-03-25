@@ -208,6 +208,7 @@ def scan_cicd(repo: Path) -> dict:
             ci_scripts = [k for k in scripts if k in ("test", "lint", "build", "ci", "check", "typecheck", "type-check")]
             if ci_scripts:
                 results["configs"].append({"name": "npm scripts", "path": "package.json", "scripts": ci_scripts})
+                results["has_ci"] = True
         except (json.JSONDecodeError, OSError):
             pass
 
