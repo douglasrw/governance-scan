@@ -378,6 +378,47 @@ class TestScanAntiPatterns:
         result = scan_anti_patterns(tmp_path)
         assert result["todos"] == 2
 
+    def test_env_file_secrets_detected(self, tmp_path):
+        """Committed .env files with secret-like contents are flagged."""
+        (tmp_path / ".env").write_text(
+            'OPENAI_API_KEY="sk-abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] >= 1
+
+    def test_env_local_secrets_detected(self, tmp_path):
+        """Committed .env.local files with secret-like contents are flagged."""
+        (tmp_path / ".env.local").write_text(
+            'PASSWORD="super-secret-password-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] >= 1
+
+    def test_multiple_env_files_counted_separately(self, tmp_path):
+        """Each env file with secrets counts as a separate finding."""
+        (tmp_path / ".env").write_text(
+            'API_KEY="sk-abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        (tmp_path / ".env.local").write_text(
+            'SECRET="this-is-a-very-long-secret-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] >= 2
+
+    def test_env_file_without_secrets_not_flagged(self, tmp_path):
+        """A .env file with no secret-like content is not flagged."""
+        (tmp_path / ".env").write_text("DEBUG=true\nPORT=3000\n")
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_production_secrets_detected(self, tmp_path):
+        """Committed .env.production files with secrets are flagged."""
+        (tmp_path / ".env.production").write_text(
+            'TOKEN="abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] >= 1
+
 
 class TestGenerateRecommendations:
     """Tests for agent-config recommendation in generate_recommendations."""
@@ -444,6 +485,19 @@ class TestGenerateRecommendations:
         assert "hook" in recs[1].lower()
         assert "test" in recs[2].lower()
         assert not any("agent configuration" in r for r in recs)
+
+    def test_secrets_recommendation_high_priority(self):
+        """Secret removal recommendation appears when secrets are found, even with other gaps."""
+        d = self._defaults(
+            claude_md={"total_lines": 0, "structured": False, "total_rules": 0},
+            hooks={"l5_count": 0},
+            anti_patterns={"secrets": 2, "todos": 5},
+        )
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        assert any("Remove hardcoded secrets" in r for r in recs)
 
 
 class TestScanRepo:

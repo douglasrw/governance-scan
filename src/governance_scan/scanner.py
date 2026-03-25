@@ -245,6 +245,11 @@ def scan_agent_config(repo: Path) -> dict:
     return results
 
 
+def _is_env_file(path: Path) -> bool:
+    """Check if a file is a dotenv file (.env, .env.local, .env.production, etc.)."""
+    return path.name == ".env" or path.name.startswith(".env.")
+
+
 def scan_anti_patterns(repo: Path) -> dict:
     """Scan for common anti-patterns (secrets, TODOs, dead code)."""
     results = {"secrets": 0, "todos": 0, "dead_code": 0}
@@ -262,7 +267,9 @@ def scan_anti_patterns(repo: Path) -> dict:
     for f in repo.rglob("*"):
         if file_count >= max_files:
             break
-        if not f.is_file() or f.suffix not in scannable or _should_skip(f):
+        if not f.is_file() or _should_skip(f):
+            continue
+        if f.suffix not in scannable and not _is_env_file(f):
             continue
         file_count += 1
 
@@ -271,12 +278,10 @@ def scan_anti_patterns(repo: Path) -> dict:
         except Exception:
             continue
 
-        # Skip .env files for secret scanning (they are supposed to have secrets)
-        if f.suffix != ".env":
-            for pattern in secret_patterns:
-                if pattern.search(text):
-                    results["secrets"] += 1
-                    break
+        for pattern in secret_patterns:
+            if pattern.search(text):
+                results["secrets"] += 1
+                break
 
         results["todos"] += len(re.findall(r'(?i)\b(TODO|FIXME|HACK|XXX)\b', text))
         results["dead_code"] += len(re.findall(r'(?i)\b(DEPRECATED|DEAD CODE|UNUSED|REMOVE ME)\b', text))
@@ -297,6 +302,9 @@ def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
     elif claude_md["total_lines"] > 500:
         recs.append("Trim CLAUDE.md to <200 lines -- move reference material to separate files")
 
+    if anti_patterns["secrets"] > 0:
+        recs.append("Remove hardcoded secrets from source code -- use environment variables instead")
+
     if hooks["l5_count"] == 0:
         recs.append("Add pre-commit hooks or Claude Code hooks to enforce critical rules automatically")
 
@@ -310,9 +318,6 @@ def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
 
     if agent_config["maturity"] == 0:
         recs.append("Add agent configuration (AGENTS.md or .claude/settings.json) to define AI agent boundaries and permissions")
-
-    if anti_patterns["secrets"] > 0:
-        recs.append("Remove hardcoded secrets from source code -- use environment variables instead")
 
     if anti_patterns["todos"] > 30:
         recs.append("Convert TODO/FIXME markers to tracked issues -- you have %d untracked items" % anti_patterns["todos"])
