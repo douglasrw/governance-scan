@@ -188,6 +188,52 @@ class TestScanHooks:
         result = scan_hooks(tmp_path)
         assert result["l5_count"] >= 1
 
+    def test_malformed_hook_string_entries(self, tmp_path):
+        """Hook lists containing bare strings instead of dicts are skipped."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        settings = {"hooks": {"PreToolUse": ["Write", "Edit"]}}
+        (claude_dir / "settings.json").write_text(json.dumps(settings))
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] == 0
+        assert result["hooks"] == []
+
+    def test_malformed_hook_mixed_entries(self, tmp_path):
+        """Valid dict entries are kept; non-dict entries are skipped."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        settings = {"hooks": {"PreToolUse": [
+            "Write",
+            {"matcher": "Bash", "command": "echo ok"},
+            42,
+        ]}}
+        (claude_dir / "settings.json").write_text(json.dumps(settings))
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] == 1
+        assert result["hooks"][0]["matcher"] == "Bash"
+
+    def test_malformed_hooks_not_a_dict(self, tmp_path):
+        """If 'hooks' value is not a dict, scan_hooks should not crash."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        settings = {"hooks": "not-a-dict"}
+        (claude_dir / "settings.json").write_text(json.dumps(settings))
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] == 0
+
+    def test_malformed_hook_null_entry(self, tmp_path):
+        """Null entries in hook lists are skipped."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        settings = {"hooks": {"PreToolUse": [None]}}
+        (claude_dir / "settings.json").write_text(json.dumps(settings))
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] == 0
+
 
 class TestScanTests:
     def test_no_tests(self, empty_repo):

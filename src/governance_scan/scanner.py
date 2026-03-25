@@ -77,9 +77,13 @@ def scan_hooks(repo: Path) -> dict:
             try:
                 data = json.loads(path.read_text())
                 hooks = data.get("hooks", {})
+                if not isinstance(hooks, dict):
+                    hooks = {}
                 for hook_type, hook_list in hooks.items():
                     if isinstance(hook_list, list):
                         for hook in hook_list:
+                            if not isinstance(hook, dict):
+                                continue
                             results["hooks"].append({
                                 "type": hook_type,
                                 "matcher": hook.get("matcher", ""),
