@@ -505,6 +505,62 @@ class TestScanAntiPatterns:
         result = scan_anti_patterns(tmp_path)
         assert result["secrets"] >= 1
 
+    # -- suffix-order template variants ----------------------------------------
+
+    def test_env_local_example_ignored(self, tmp_path):
+        """.env.local.example (suffix-order) is a template and should not trigger secrets."""
+        (tmp_path / ".env.local.example").write_text(
+            'API_KEY="sk-placeholder-replace-me-with-real-key"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_production_sample_ignored(self, tmp_path):
+        """.env.production.sample (suffix-order) is a template and should not trigger secrets."""
+        (tmp_path / ".env.production.sample").write_text(
+            'SECRET="replace-this-with-your-secret-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_local_template_ignored(self, tmp_path):
+        """.env.local.template (suffix-order) is a template and should not trigger secrets."""
+        (tmp_path / ".env.local.template").write_text(
+            'TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_env_staging_dist_ignored(self, tmp_path):
+        """.env.staging.dist (suffix-order) is a template and should not trigger secrets."""
+        (tmp_path / ".env.staging.dist").write_text(
+            'PASSWORD="changeme-this-is-a-placeholder-value"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 0
+
+    def test_real_env_local_detected_alongside_suffix_template(self, tmp_path):
+        """Real .env.local is flagged even when .env.local.example exists."""
+        (tmp_path / ".env.local.example").write_text(
+            'API_KEY="sk-placeholder-replace-me-with-real-key"\n'
+        )
+        (tmp_path / ".env.local").write_text(
+            'API_KEY="sk-live-abcdefghijklmnopqrstuvwxyz123456"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 1
+
+    def test_real_env_production_detected_alongside_suffix_template(self, tmp_path):
+        """Real .env.production is flagged even when .env.production.sample exists."""
+        (tmp_path / ".env.production.sample").write_text(
+            'TOKEN="replace-this-placeholder-token-value-now"\n'
+        )
+        (tmp_path / ".env.production").write_text(
+            'TOKEN="abcdefghijklmnopqrstuvwxyz1234567890"\n'
+        )
+        result = scan_anti_patterns(tmp_path)
+        assert result["secrets"] == 1
+
 
 class TestGenerateRecommendations:
     """Tests for agent-config recommendation in generate_recommendations."""

@@ -246,19 +246,28 @@ def scan_agent_config(repo: Path) -> dict:
 
 
 _ENV_TEMPLATE_PREFIXES = (".env.example", ".env.sample", ".env.template", ".env.dist")
+_ENV_TEMPLATE_SUFFIXES = (".example", ".sample", ".template", ".dist")
 
 
 def _is_env_file(path: Path) -> bool:
     """Check if a file is a dotenv file (.env, .env.local, .env.production, etc.).
 
-    Template/example files (.env.example, .env.sample, etc.) are excluded
-    because they typically contain placeholder values, not real secrets.
-    Suffixed variants like .env.template.local are also treated as templates.
+    Template/example files are excluded because they typically contain
+    placeholder values, not real secrets.  Both prefix-order variants
+    (.env.example.local) and suffix-order variants (.env.local.example,
+    .env.production.sample) are treated as templates.
     """
     name = path.name
+    # Prefix-order templates: .env.example, .env.sample.local, etc.
     if any(name.startswith(prefix) for prefix in _ENV_TEMPLATE_PREFIXES):
         return False
-    return name == ".env" or name.startswith(".env.")
+    # Must be a dotenv file
+    if not (name == ".env" or name.startswith(".env.")):
+        return False
+    # Suffix-order templates: .env.local.example, .env.production.sample, etc.
+    if any(name.endswith(suffix) for suffix in _ENV_TEMPLATE_SUFFIXES):
+        return False
+    return True
 
 
 def scan_anti_patterns(repo: Path) -> dict:
