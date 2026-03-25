@@ -102,6 +102,39 @@ class TestScanClaudeMd:
         assert result["structured"] is True
         assert result["total_rules"] == 3
 
+    def test_numbered_rules_dot(self, tmp_path):
+        """Numbered rules with dot notation (1. Must ...) are counted."""
+        (tmp_path / "CLAUDE.md").write_text(
+            "# Rules\n\n"
+            "1. Must use TypeScript\n"
+            "2. Never commit secrets\n"
+            "3. Always run tests\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_rules"] == 3
+
+    def test_numbered_rules_paren(self, tmp_path):
+        """Numbered rules with paren notation (1) Must ...) are counted."""
+        (tmp_path / "CLAUDE.md").write_text(
+            "# Rules\n\n"
+            "1) Must use TypeScript\n"
+            "2) Avoid global state\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_rules"] == 2
+
+    def test_mixed_bullet_and_numbered_rules(self, tmp_path):
+        """Both bullet and numbered rules count toward total_rules."""
+        (tmp_path / "CLAUDE.md").write_text(
+            "# Rules\n\n"
+            "- Must use TypeScript\n"
+            "1. Never commit secrets\n"
+            "2) Always run tests\n"
+            "* Should prefer immutable data\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_rules"] == 4
+
 
 class TestScanHooks:
     def test_no_hooks(self, empty_repo):

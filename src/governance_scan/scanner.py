@@ -56,9 +56,9 @@ def scan_claude_md(repo: Path) -> dict:
             if len(headings) >= 3:
                 results["structured"] = True
 
-            # Count enforcement rules
+            # Count enforcement rules (bullet and numbered lists)
             rule_pattern = re.compile(
-                r'^\s*[-*]\s+\*?\*?(Must|Never|Always|Do not|Prefer|Should|Avoid)',
+                r'^\s*(?:[-*]|\d+[.)])\s+\*?\*?(Must|Never|Always|Do not|Prefer|Should|Avoid)',
                 re.IGNORECASE,
             )
             results["total_rules"] += sum(1 for l in lines if rule_pattern.match(l))
