@@ -33,8 +33,21 @@ def _should_skip(path: Path) -> bool:
 
 
 def scan_claude_md(repo: Path) -> dict:
-    """Scan for CLAUDE.md / .cursorrules and analyze structure."""
+    """Scan for CLAUDE.md / .cursorrules / .cursor/rules and analyze structure."""
     results = {"files": [], "total_lines": 0, "total_rules": 0, "structured": False}
+
+    rule_pattern = re.compile(
+        r'^\s*(?:[-*]|\d+[.)])\s+\*?\*?(Must|Never|Always|Do not|Prefer|Should|Avoid)',
+        re.IGNORECASE,
+    )
+
+    def _ingest(text: str, rel_path: str) -> None:
+        lines = text.splitlines()
+        results["files"].append({"path": rel_path, "lines": len(lines)})
+        results["total_lines"] += len(lines)
+        if len([l for l in lines if l.startswith("#")]) >= 3:
+            results["structured"] = True
+        results["total_rules"] += sum(1 for l in lines if rule_pattern.match(l))
 
     candidates = ["CLAUDE.md", ".claude/CLAUDE.md", ".cursorrules", ".github/copilot-instructions.md", "AGENTS.md"]
     for name in candidates:
@@ -44,24 +57,19 @@ def scan_claude_md(repo: Path) -> dict:
                 text = path.read_text(errors="ignore")
             except Exception:
                 continue
-            lines = text.splitlines()
-            results["files"].append({
-                "path": name,
-                "lines": len(lines),
-            })
-            results["total_lines"] += len(lines)
+            _ingest(text, name)
 
-            # Structured if 3+ headings
-            headings = [l for l in lines if l.startswith("#")]
-            if len(headings) >= 3:
-                results["structured"] = True
-
-            # Count enforcement rules (bullet and numbered lists)
-            rule_pattern = re.compile(
-                r'^\s*(?:[-*]|\d+[.)])\s+\*?\*?(Must|Never|Always|Do not|Prefer|Should|Avoid)',
-                re.IGNORECASE,
-            )
-            results["total_rules"] += sum(1 for l in lines if rule_pattern.match(l))
+    # .cursor/rules directory (Cursor IDE rule files)
+    cursor_rules_dir = repo / ".cursor" / "rules"
+    if cursor_rules_dir.is_dir():
+        for rule_file in sorted(cursor_rules_dir.iterdir()):
+            if not rule_file.is_file():
+                continue
+            try:
+                text = rule_file.read_text(errors="ignore")
+            except Exception:
+                continue
+            _ingest(text, f".cursor/rules/{rule_file.name}")
 
     return results
 

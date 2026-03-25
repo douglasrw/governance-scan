@@ -135,6 +135,52 @@ class TestScanClaudeMd:
         assert len(result["files"]) == 2
         assert result["total_rules"] == 2
 
+    def test_cursor_rules_dir_counted_as_guidance(self, tmp_path):
+        """.cursor/rules directory files contribute governance guidance credit."""
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "style.mdc").write_text(
+            "# Style Rules\n\n"
+            "## Formatting\n\n"
+            "## Naming\n\n"
+            "- Must use camelCase for variables\n"
+            "- Never use abbreviations\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == ".cursor/rules/style.mdc"
+        assert result["structured"] is True
+        assert result["total_rules"] == 2
+
+    def test_cursor_rules_multiple_files(self, tmp_path):
+        """Multiple files in .cursor/rules each contribute to totals."""
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "a.mdc").write_text("- Must lint\n")
+        (rules_dir / "b.mdc").write_text("- Never skip tests\n")
+        result = scan_claude_md(tmp_path)
+        assert len(result["files"]) == 2
+        assert result["total_rules"] == 2
+
+    def test_cursor_rules_combined_with_claude_md(self, tmp_path):
+        """Both CLAUDE.md and .cursor/rules contribute to totals."""
+        (tmp_path / "CLAUDE.md").write_text("# Rules\n\n## Style\n\n## Tests\n\n- Must lint\n")
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "extra.mdc").write_text("- Never use any\n")
+        result = scan_claude_md(tmp_path)
+        assert len(result["files"]) == 2
+        assert result["total_rules"] == 2
+
+    def test_cursor_rules_empty_dir_no_credit(self, tmp_path):
+        """An empty .cursor/rules directory gives no credit."""
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] == 0
+        assert len(result["files"]) == 0
+
     def test_no_agents_md_no_claude_md(self, empty_repo):
         """Repo with neither AGENTS.md nor CLAUDE.md remains negative."""
         result = scan_claude_md(empty_repo)
