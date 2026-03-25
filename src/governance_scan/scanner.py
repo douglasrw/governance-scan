@@ -111,14 +111,15 @@ def scan_hooks(repo: Path) -> dict:
                 })
                 results["l5_count"] += 1
 
-    # pre-commit-config.yaml
-    if (repo / ".pre-commit-config.yaml").exists():
-        results["hooks"].append({
-            "type": "pre-commit-config",
-            "matcher": "pre-commit framework",
-            "source": ".pre-commit-config.yaml",
-        })
-        results["l5_count"] += 1
+    # pre-commit-config.yaml / .yml
+    for pcf in (".pre-commit-config.yaml", ".pre-commit-config.yml"):
+        if (repo / pcf).exists():
+            results["hooks"].append({
+                "type": "pre-commit-config",
+                "matcher": "pre-commit framework",
+                "source": pcf,
+            })
+            results["l5_count"] += 1
 
     # lefthook
     if (repo / "lefthook.yml").exists() or (repo / ".lefthook.yml").exists():

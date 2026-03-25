@@ -114,6 +114,14 @@ class TestScanHooks:
         result = scan_hooks(tmp_path)
         assert result["l5_count"] >= 1
 
+    def test_pre_commit_config_yml(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / ".pre-commit-config.yml").write_text("repos: []\n")
+        result = scan_hooks(tmp_path)
+        assert result["l5_count"] >= 1
+        sources = [h["source"] for h in result["hooks"]]
+        assert ".pre-commit-config.yml" in sources
+
     def test_claude_settings_hooks(self, tmp_path):
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
         claude_dir = tmp_path / ".claude"
