@@ -99,7 +99,7 @@ def main():
         prog="governance-scan",
         description="AI governance scanner for codebases. Scores enforcement maturity, context hygiene, and automation readiness.",
     )
-    parser.add_argument("path", help="Path to the repository to scan")
+    parser.add_argument("path", nargs="?", default=None, help="Path to the repository to scan")
     parser.add_argument("--json", action="store_true", dest="json_output",
                         help="Output machine-readable JSON")
     parser.add_argument("--no-color", action="store_true",
@@ -107,6 +107,15 @@ def main():
     parser.add_argument("--version", action="version", version=f"governance-scan {__version__}")
 
     args = parser.parse_args()
+
+    if args.path is None:
+        msg = "Missing required argument: path"
+        if args.json_output:
+            json.dump({"error": True, "code": "MISSING_REPO_PATH", "message": msg}, sys.stdout, indent=2)
+            print(file=sys.stdout)
+        else:
+            parser.error("the following arguments are required: path")
+        sys.exit(1)
 
     if os.path.exists(args.path) and not os.path.isdir(args.path):
         msg = f"Path is a file, not a directory: {args.path}"

@@ -114,6 +114,26 @@ class TestCli:
         finally:
             d.chmod(0o700)
 
+    def test_missing_path(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "governance_scan.cli"],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 2
+        assert "required" in result.stderr
+
+    def test_missing_path_json(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "governance_scan.cli", "--json"],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 1
+        data = json.loads(result.stdout)
+        assert data["error"] is True
+        assert data["code"] == "MISSING_REPO_PATH"
+        assert "missing" in data["message"].lower()
+        assert result.stderr == ""
+
     def test_version(self):
         result = subprocess.run(
             [sys.executable, "-m", "governance_scan.cli", "--version"],
