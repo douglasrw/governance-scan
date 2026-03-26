@@ -71,17 +71,17 @@ def scan_claude_md(repo: Path) -> dict:
                 continue
             _ingest(text, f".cursor/rules/{rule_file.name}")
 
-    # .github/instructions/*.instructions.md (top-level GitHub instruction files)
+    # .github/instructions/**/*.instructions.md (GitHub instruction files, including scoped subfolders)
     instructions_dir = repo / ".github" / "instructions"
     if instructions_dir.is_dir():
-        for instruction_file in sorted(instructions_dir.iterdir()):
-            if not (instruction_file.is_file() and instruction_file.name.endswith(".instructions.md")):
+        for instruction_file in sorted(instructions_dir.rglob("*.instructions.md")):
+            if not instruction_file.is_file():
                 continue
             try:
                 text = instruction_file.read_text(errors="ignore")
             except Exception:
                 continue
-            _ingest(text, f".github/instructions/{instruction_file.name}")
+            _ingest(text, instruction_file.relative_to(repo).as_posix())
 
     return results
 
@@ -284,12 +284,12 @@ def scan_agent_config(repo: Path) -> dict:
                 results["files"].append({"path": rel, "name": "Cursor rules"})
                 results["maturity"] += 1
 
-    # .github/instructions/*.instructions.md (Copilot coding agent instructions)
+    # .github/instructions/**/*.instructions.md (Copilot coding agent instructions)
     instructions_dir = repo / ".github" / "instructions"
     if instructions_dir.is_dir():
-        for f in sorted(instructions_dir.iterdir()):
-            if f.is_file() and f.name.endswith(".instructions.md"):
-                rel = f".github/instructions/{f.name}"
+        for f in sorted(instructions_dir.rglob("*.instructions.md")):
+            if f.is_file():
+                rel = f.relative_to(repo).as_posix()
                 results["files"].append({"path": rel, "name": "GitHub instructions"})
                 results["maturity"] += 1
 

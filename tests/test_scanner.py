@@ -209,15 +209,16 @@ class TestScanClaudeMd:
         assert len(result["files"]) == 2
         assert result["total_rules"] == 2
 
-    def test_github_instructions_nested_dirs_ignored(self, tmp_path):
-        """Nested directories under .github/instructions/ are not counted."""
+    def test_github_instructions_nested_dirs_counted(self, tmp_path):
+        """Nested directories under .github/instructions/ are counted."""
         inst_dir = tmp_path / ".github" / "instructions"
         (inst_dir / "nested").mkdir(parents=True)
         (inst_dir / "nested" / "code-review.instructions.md").write_text("- Must review tests\n")
         result = scan_claude_md(tmp_path)
-        assert result["total_lines"] == 0
-        assert result["total_rules"] == 0
-        assert len(result["files"]) == 0
+        assert result["total_lines"] > 0
+        assert result["total_rules"] == 1
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == ".github/instructions/nested/code-review.instructions.md"
 
     def test_no_agents_md_no_claude_md(self, empty_repo):
         """Repo with neither AGENTS.md nor CLAUDE.md remains negative."""
@@ -632,6 +633,18 @@ class TestScanAgentConfig:
         paths = [e["path"] for e in result["files"]]
         assert ".github/instructions/code-review.instructions.md" in paths
         assert ".github/instructions/testing.instructions.md" in paths
+
+    def test_github_instructions_nested_dirs_detected(self, tmp_path):
+        """Nested *.instructions.md files count as agent-config maturity."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        (inst_dir / "frontend").mkdir(parents=True)
+        (inst_dir / "frontend" / "review.instructions.md").write_text("# Review\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(
+            e["path"] == ".github/instructions/frontend/review.instructions.md"
+            for e in result["files"]
+        )
 
     def test_github_instructions_non_matching_ignored(self, tmp_path):
         """Files not matching *.instructions.md in .github/instructions/ are ignored."""
