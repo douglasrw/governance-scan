@@ -11,6 +11,8 @@ AI governance scanner for codebases. Scores enforcement maturity, context hygien
 
 Works on **any** git repository. No API keys, no accounts, no network calls. Pure local static analysis.
 
+The output category name `CLAUDE.md Quality` is kept for compatibility, but the scanner also credits other AI guidance surfaces such as `AGENTS.md`, `GEMINI.md`, Copilot/Cursor/Claude instruction files, and scoped instruction directories.
+
 ## Quick Start
 
 ### Install via pip
@@ -68,7 +70,39 @@ governance-scan /path/to/your/repo
 governance-scan --json /path/to/your/repo
 ```
 
-Returns machine-readable JSON with `score`, `grade`, `categories`, `recommendations`, and `cta` fields. Ideal for CI pipelines.
+On success, `--json` writes the full scan payload to `stdout`, including:
+
+- `repo`
+- `score`
+- `grade`
+- `scores`
+- `categories`
+- `recommendations`
+- `cta`
+- `raw`
+
+This is the same data used by the GitHub Action outputs and is suitable for CI pipelines.
+
+### JSON Error Contract
+
+When `--json` is enabled, expected CLI failures also return JSON on `stdout` and leave `stderr` empty:
+
+```json
+{
+  "error": true,
+  "code": "REPO_NOT_FOUND",
+  "message": "Repository not found: /path/to/repo"
+}
+```
+
+Current JSON error codes:
+
+- `MISSING_REPO_PATH`
+- `INVALID_REPO_ROOT`
+- `REPO_NOT_FOUND`
+- `PERMISSION_DENIED`
+
+In JSON mode these cases exit with status `1`. In human-readable mode, errors are printed to `stderr`; a missing required path without `--json` uses `argparse`'s standard exit status `2`.
 
 ### Options
 
@@ -116,12 +150,17 @@ The action posts a PR comment with the scan results, including score, grade, cat
 
 | Category | What it checks |
 |----------|---------------|
-| **CLAUDE.md Quality** | Presence, structure, rule count of CLAUDE.md / .cursorrules |
+| **CLAUDE.md Quality** | Presence, structure, and rule density across `CLAUDE.md`, `.claude/CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `AGENTS.md`, `GEMINI.md`, `.gemini/GEMINI.md`, `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md` |
 | **Enforcement Hooks** | Pre-commit hooks, Claude Code hooks, Husky, pre-commit framework, lefthook |
 | **Test Infrastructure** | Test files, test directories, source-to-test ratio |
-| **CI Integration** | GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis, Docker |
-| **Enforcement Rules** | Must/Never/Always rules in CLAUDE.md |
+| **CI Integration** | A binary CI signal based on detected GitHub Actions workflow files, GitLab CI, Jenkins, CircleCI, Travis CI, `Makefile`, `Dockerfile`, Docker Compose files, or qualifying npm scripts in `package.json` (`test`, `lint`, `build`, `ci`, `check`, `typecheck`, `type-check`) |
+| **Enforcement Rules** | Must/Never/Always/Do not/Prefer/Should/Avoid rule markers across the structural guidance files counted in the `CLAUDE.md Quality` category |
 | **Anti-Patterns** | Hardcoded secrets, TODO/FIXME debt, dead code markers |
+
+Notes:
+
+- An empty `.github/workflows/` directory does not count as CI; the directory must contain at least one `.yml` or `.yaml` workflow file.
+- Agent-config maturity and recommendations also look at surfaces such as `.claude/settings.json`, `.claude/settings.local.json`, `data/agents`, `data/roles`, and `scripts/agents`.
 
 ## Scoring
 
