@@ -11,7 +11,7 @@ AI governance scanner for codebases. Scores enforcement maturity, context hygien
 
 Works on **any** git repository. No API keys, no accounts, no network calls. Pure local static analysis.
 
-The output category name `CLAUDE.md Quality` is kept for compatibility, but the scanner credits AI guidance across `AGENTS.md`, `agents.md`, `CLAUDE.md`, `claude.md`, `.claude/CLAUDE.md`, `GEMINI.md`, `gemini.md`, `.gemini/GEMINI.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md`.
+The scanner reports this category as `AI Guidance Quality` and credits AI guidance across `AGENTS.md`, `agents.md`, `CLAUDE.md`, `claude.md`, `.claude/CLAUDE.md`, `GEMINI.md`, `gemini.md`, `.gemini/GEMINI.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md`.
 
 ## Quick Start
 
@@ -47,7 +47,7 @@ governance-scan /path/to/your/repo
     Automation            40/100 C  [########-------]
 
   Categories:
-    CLAUDE.md Quality          25/100
+    AI Guidance Quality        25/100
     Enforcement Hooks           0/100
     Test Infrastructure        50/100
     CI Integration            100/100
@@ -150,12 +150,12 @@ The action posts a PR comment with the scan results, including score, grade, cat
 
 | Category | What it checks |
 |----------|---------------|
-| **CLAUDE.md Quality** | Presence, structure, and rule density across `CLAUDE.md`, `claude.md`, `.claude/CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `AGENTS.md`, `agents.md`, `GEMINI.md`, `gemini.md`, `.gemini/GEMINI.md`, `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md` |
+| **AI Guidance Quality** | Presence, structure, and rule density across `CLAUDE.md`, `claude.md`, `.claude/CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `AGENTS.md`, `agents.md`, `GEMINI.md`, `gemini.md`, `.gemini/GEMINI.md`, `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md` |
 | **Enforcement Hooks** | Pre-commit hooks, Claude Code hooks, Husky, pre-commit framework, lefthook |
 | **Test Infrastructure** | Test files, test directories, source-to-test ratio |
 | **CI Integration** | A binary CI signal based on detected GitHub Actions workflow files, GitLab CI, Jenkins, CircleCI, Travis CI, `Makefile`, `Dockerfile`, Docker Compose files, or qualifying npm scripts in `package.json` (`test`, `lint`, `build`, `ci`, `check`, `typecheck`, `type-check`) |
-| **Enforcement Rules** | Must/Never/Always/Do not/Prefer/Should/Avoid rule markers across the structural guidance files counted in the `CLAUDE.md Quality` category |
-| **Anti-Patterns** | Hardcoded secrets, TODO/FIXME debt, dead code markers |
+| **Enforcement Rules** | Must/Never/Always/Do not/Prefer/Should/Avoid rule markers across the structural guidance files counted in the `AI Guidance Quality` category |
+| **Anti-Pattern Score** | Hardcoded secrets, TODO/FIXME debt, dead code markers |
 
 Notes:
 
