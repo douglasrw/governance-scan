@@ -275,6 +275,15 @@ def scan_agent_config(repo: Path) -> dict:
             results["files"].append({"path": path_str, "name": name})
             results["maturity"] += 1
 
+    # .cursor/rules directory (Cursor IDE rule files)
+    cursor_rules_dir = repo / ".cursor" / "rules"
+    if cursor_rules_dir.is_dir():
+        for f in sorted(cursor_rules_dir.iterdir()):
+            if f.is_file():
+                rel = f".cursor/rules/{f.name}"
+                results["files"].append({"path": rel, "name": "Cursor rules"})
+                results["maturity"] += 1
+
     # .github/instructions/*.instructions.md (Copilot coding agent instructions)
     instructions_dir = repo / ".github" / "instructions"
     if instructions_dir.is_dir():

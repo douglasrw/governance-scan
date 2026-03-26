@@ -574,6 +574,44 @@ class TestScanAgentConfig:
         )
         assert not any("agent configuration" in r for r in recs)
 
+    def test_cursor_rules_detected(self, tmp_path):
+        """`.cursor/rules/*` counts as agent-config maturity."""
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "style.mdc").write_text("# Style\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".cursor/rules/style.mdc" for e in result["files"])
+
+    def test_cursor_rules_multiple_files(self, tmp_path):
+        """Multiple direct files in `.cursor/rules/` each contribute maturity."""
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "a.mdc").write_text("# A\n")
+        (rules_dir / "b.mdc").write_text("# B\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert ".cursor/rules/a.mdc" in paths
+        assert ".cursor/rules/b.mdc" in paths
+
+    def test_cursor_rules_suppresses_recommendation(self, tmp_path):
+        """A repo with only `.cursor/rules/*` should not get the agent-config recommendation."""
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "dev.mdc").write_text("# Dev\n")
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
     def test_github_instructions_md_detected(self, tmp_path):
         """`.github/instructions/*.instructions.md` counts as agent-config maturity."""
         inst_dir = tmp_path / ".github" / "instructions"
