@@ -723,6 +723,28 @@ class TestScanAgentConfig:
         )
         assert not any("agent configuration" in r for r in recs)
 
+    def test_cursorrules_detected(self, tmp_path):
+        """`.cursorrules` counts as agent-config maturity."""
+        (tmp_path / ".cursorrules").write_text("# Cursor Rules\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".cursorrules" for e in result["files"])
+
+    def test_cursorrules_suppresses_recommendation(self, tmp_path):
+        """A repo with only `.cursorrules` should not get the agent-config recommendation."""
+        (tmp_path / ".cursorrules").write_text("# Cursor Rules\n")
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
     def test_cursor_rules_detected(self, tmp_path):
         """`.cursor/rules/*` counts as agent-config maturity."""
         rules_dir = tmp_path / ".cursor" / "rules"
