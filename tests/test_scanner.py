@@ -135,6 +135,30 @@ class TestScanClaudeMd:
         assert len(result["files"]) == 2
         assert result["total_rules"] == 2
 
+    @pytest.mark.parametrize("filename", ["agents.md", "claude.md", "gemini.md"])
+    def test_lowercase_top_level_guidance_filenames_counted(self, tmp_path, filename):
+        """Lowercase top-level guidance filenames contribute structural guidance credit."""
+        (tmp_path / filename).write_text(
+            "# Guidance\n\n"
+            "## Workflow\n\n"
+            "## Constraints\n\n"
+            "- Must follow the task packet\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == filename
+        assert result["structured"] is True
+        assert result["total_rules"] == 1
+
+    @pytest.mark.parametrize("filename", ["Agents.md", "Claude.md", "Gemini.md"])
+    def test_mixed_case_top_level_guidance_filenames_not_counted(self, tmp_path, filename):
+        """Mixed-case top-level guidance filenames remain excluded."""
+        (tmp_path / filename).write_text("# Guidance\n\n- Must follow the task packet\n")
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] == 0
+        assert len(result["files"]) == 0
+
     def test_gemini_md_counted_as_guidance(self, tmp_path):
         """GEMINI.md alone gives governance guidance credit."""
         (tmp_path / "GEMINI.md").write_text(

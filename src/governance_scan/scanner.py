@@ -59,11 +59,14 @@ def scan_claude_md(repo: Path) -> dict:
 
     candidates = [
         "CLAUDE.md",
+        "claude.md",
         ".claude/CLAUDE.md",
         ".cursorrules",
         ".github/copilot-instructions.md",
         "AGENTS.md",
+        "agents.md",
         "GEMINI.md",
+        "gemini.md",
         ".gemini/GEMINI.md",
     ]
     for name in candidates:
