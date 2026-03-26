@@ -135,6 +135,37 @@ class TestScanClaudeMd:
         assert len(result["files"]) == 2
         assert result["total_rules"] == 2
 
+    def test_claude_commands_counted_as_guidance(self, tmp_path):
+        """`.claude/commands/*` guidance files contribute to structural totals."""
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "review.md").write_text(
+            "# Review\n\n"
+            "## Scope\n\n"
+            "## Checks\n\n"
+            "- Must review tests\n"
+            "- Never ignore regressions\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == ".claude/commands/review.md"
+        assert result["structured"] is True
+        assert result["total_rules"] == 2
+
+    def test_claude_commands_combined_with_other_guidance(self, tmp_path):
+        """Claude commands add to CLAUDE.md and Cursor guidance totals."""
+        (tmp_path / "CLAUDE.md").write_text("# Rules\n\n## Style\n\n## Tests\n\n- Must lint\n")
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "review.md").write_text("- Never skip tests\n")
+        rules_dir = tmp_path / ".cursor" / "rules"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "style.mdc").write_text("- Should prefer explicit types\n")
+        result = scan_claude_md(tmp_path)
+        assert len(result["files"]) == 3
+        assert result["total_rules"] == 3
+
     def test_cursor_rules_dir_counted_as_guidance(self, tmp_path):
         """.cursor/rules directory files contribute governance guidance credit."""
         rules_dir = tmp_path / ".cursor" / "rules"

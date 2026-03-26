@@ -33,7 +33,7 @@ def _should_skip(path: Path) -> bool:
 
 
 def scan_claude_md(repo: Path) -> dict:
-    """Scan for CLAUDE.md / .cursorrules / .cursor/rules and analyze structure."""
+    """Scan structural AI guidance files and analyze their rule density."""
     results = {"files": [], "total_lines": 0, "total_rules": 0, "structured": False}
 
     rule_pattern = re.compile(
@@ -58,6 +58,18 @@ def scan_claude_md(repo: Path) -> dict:
             except Exception:
                 continue
             _ingest(text, name)
+
+    # .claude/commands directory (Claude command guidance files)
+    claude_commands_dir = repo / ".claude" / "commands"
+    if claude_commands_dir.is_dir():
+        for command_file in sorted(claude_commands_dir.rglob("*")):
+            if not command_file.is_file():
+                continue
+            try:
+                text = command_file.read_text(errors="ignore")
+            except Exception:
+                continue
+            _ingest(text, command_file.relative_to(repo).as_posix())
 
     # .cursor/rules directory (Cursor IDE rule files)
     cursor_rules_dir = repo / ".cursor" / "rules"
