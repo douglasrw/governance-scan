@@ -394,6 +394,16 @@ class TestScanCicd:
         result = scan_cicd(empty_repo)
         assert result["has_ci"] is False
 
+    def test_empty_github_workflows_dir_is_not_ci(self, tmp_path):
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        workflows = tmp_path / ".github" / "workflows"
+        workflows.mkdir(parents=True)
+
+        result = scan_cicd(tmp_path)
+
+        assert result["has_ci"] is False
+        assert not any(c["name"] == "GitHub Actions" for c in result["configs"])
+
     def test_with_ci(self, rich_repo):
         result = scan_cicd(rich_repo)
         assert result["has_ci"] is True

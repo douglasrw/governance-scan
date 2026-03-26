@@ -192,6 +192,7 @@ def scan_tests(repo: Path) -> dict:
 def scan_cicd(repo: Path) -> dict:
     """Check for CI/CD configuration."""
     results = {"configs": [], "has_ci": False}
+    workflow_suffixes = {".yml", ".yaml"}
 
     checks = [
         (".github/workflows", "GitHub Actions"),
@@ -212,7 +213,17 @@ def scan_cicd(repo: Path) -> dict:
         if check_path.exists():
             if check_path.is_dir():
                 files = [f for f in check_path.iterdir() if f.is_file()]
-                results["configs"].append({"name": name, "path": path_str, "files": len(files)})
+                if path_str == ".github/workflows":
+                    workflow_files = [
+                        f for f in files if f.suffix.lower() in workflow_suffixes
+                    ]
+                    if not workflow_files:
+                        continue
+                    results["configs"].append(
+                        {"name": name, "path": path_str, "files": len(workflow_files)}
+                    )
+                else:
+                    results["configs"].append({"name": name, "path": path_str, "files": len(files)})
             else:
                 results["configs"].append({"name": name, "path": path_str})
             results["has_ci"] = True
