@@ -57,7 +57,15 @@ def scan_claude_md(repo: Path) -> dict:
             results["structured"] = True
         results["total_rules"] += sum(1 for l in lines if rule_pattern.match(l))
 
-    candidates = ["CLAUDE.md", ".claude/CLAUDE.md", ".cursorrules", ".github/copilot-instructions.md", "AGENTS.md"]
+    candidates = [
+        "CLAUDE.md",
+        ".claude/CLAUDE.md",
+        ".cursorrules",
+        ".github/copilot-instructions.md",
+        "AGENTS.md",
+        "GEMINI.md",
+        ".gemini/GEMINI.md",
+    ]
     for name in candidates:
         path = repo / name
         if path.exists():

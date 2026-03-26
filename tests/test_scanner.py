@@ -135,6 +135,38 @@ class TestScanClaudeMd:
         assert len(result["files"]) == 2
         assert result["total_rules"] == 2
 
+    def test_gemini_md_counted_as_guidance(self, tmp_path):
+        """GEMINI.md alone gives governance guidance credit."""
+        (tmp_path / "GEMINI.md").write_text(
+            "# Gemini Guidance\n\n"
+            "## Workflow\n\n"
+            "## Constraints\n\n"
+            "- Must follow the review checklist\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == "GEMINI.md"
+        assert result["structured"] is True
+        assert result["total_rules"] == 1
+
+    def test_dot_gemini_gemini_md_counted_as_guidance(self, tmp_path):
+        """.gemini/GEMINI.md gives governance guidance credit."""
+        gemini_dir = tmp_path / ".gemini"
+        gemini_dir.mkdir()
+        (gemini_dir / "GEMINI.md").write_text(
+            "# Gemini Guidance\n\n"
+            "## Workflow\n\n"
+            "## Constraints\n\n"
+            "- Never skip the policy check\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == ".gemini/GEMINI.md"
+        assert result["structured"] is True
+        assert result["total_rules"] == 1
+
     def test_claude_commands_counted_as_guidance(self, tmp_path):
         """`.claude/commands/*` guidance files contribute to structural totals."""
         commands_dir = tmp_path / ".claude" / "commands"
