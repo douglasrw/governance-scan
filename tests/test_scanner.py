@@ -545,6 +545,63 @@ class TestScanAgentConfig:
         assert ".claude/settings.json" in paths
         assert ".claude/settings.local.json" in paths
 
+    def test_claude_commands_detected(self, tmp_path):
+        """`.claude/commands/*` counts as agent-config maturity."""
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "review.md").write_text("# Review\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".claude/commands/review.md" for e in result["files"])
+
+    def test_claude_commands_multiple_files(self, tmp_path):
+        """Multiple files in `.claude/commands/` each contribute maturity."""
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "review.md").write_text("# Review\n")
+        (commands_dir / "ship.md").write_text("# Ship\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert ".claude/commands/review.md" in paths
+        assert ".claude/commands/ship.md" in paths
+
+    def test_claude_commands_nested_files_detected(self, tmp_path):
+        """Nested files in `.claude/commands/` count as agent-config maturity."""
+        commands_dir = tmp_path / ".claude" / "commands" / "frontend"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "review.md").write_text("# Review\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(
+            e["path"] == ".claude/commands/frontend/review.md"
+            for e in result["files"]
+        )
+
+    def test_claude_commands_empty_dir_no_credit(self, tmp_path):
+        """An empty `.claude/commands/` directory gives no credit."""
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 0
+
+    def test_claude_commands_suppresses_recommendation(self, tmp_path):
+        """A repo with only `.claude/commands/*` should not get the agent-config recommendation."""
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "review.md").write_text("# Review\n")
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
     def test_copilot_instructions_detected(self, tmp_path):
         """`.github/copilot-instructions.md` counts as agent-config maturity."""
         gh_dir = tmp_path / ".github"

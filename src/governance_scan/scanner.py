@@ -275,6 +275,15 @@ def scan_agent_config(repo: Path) -> dict:
             results["files"].append({"path": path_str, "name": name})
             results["maturity"] += 1
 
+    # .claude/commands directory (Claude command files)
+    claude_commands_dir = repo / ".claude" / "commands"
+    if claude_commands_dir.is_dir():
+        for f in sorted(claude_commands_dir.rglob("*")):
+            if f.is_file():
+                rel = f.relative_to(repo).as_posix()
+                results["files"].append({"path": rel, "name": "Claude commands"})
+                results["maturity"] += 1
+
     # .cursor/rules directory (Cursor IDE rule files)
     cursor_rules_dir = repo / ".cursor" / "rules"
     if cursor_rules_dir.is_dir():
