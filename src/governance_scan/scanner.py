@@ -439,7 +439,7 @@ def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
         recs.append("Set up CI/CD with automated testing, linting, and type checking")
 
     if agent_config["maturity"] == 0:
-        recs.append("Add agent configuration (AGENTS.md or .claude/settings.json) to define AI agent boundaries and permissions")
+        recs.append("Add agent configuration or instruction files to define AI agent boundaries and permissions")
 
     if anti_patterns["todos"] > 30:
         recs.append("Convert TODO/FIXME markers to tracked issues -- you have %d untracked items" % anti_patterns["todos"])

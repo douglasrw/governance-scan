@@ -1223,7 +1223,8 @@ class TestGenerateRecommendations:
             d["claude_md"], d["hooks"], d["tests"],
             d["cicd"], d["agent_config"], d["anti_patterns"],
         )
-        assert any("agent configuration" in r for r in recs)
+        assert "Add agent configuration or instruction files to define AI agent boundaries and permissions" in recs
+        assert not any("AGENTS.md" in r or ".claude/settings.json" in r for r in recs)
 
     def test_agent_config_nonzero_maturity_no_recommendation(self):
         d = self._defaults(agent_config={"maturity": 1})
