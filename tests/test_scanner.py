@@ -956,6 +956,109 @@ class TestScanAgentConfig:
         )
         assert not any("agent configuration" in r for r in recs)
 
+    def test_data_agents_dir_detected(self, tmp_path):
+        """`data/agents` directory counts as agent-config maturity."""
+        agents_dir = tmp_path / "data" / "agents"
+        agents_dir.mkdir(parents=True)
+        (agents_dir / "router.yaml").write_text("name: router\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 1
+        assert any(e["path"] == "data/agents" for e in result["files"])
+        assert any(e["name"] == "Agent data directory" for e in result["files"])
+
+    def test_data_agents_empty_dir_still_detected(self, tmp_path):
+        """`data/agents` as an empty directory still counts (existence-based check)."""
+        (tmp_path / "data" / "agents").mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 1
+        assert any(e["path"] == "data/agents" for e in result["files"])
+
+    def test_data_roles_dir_detected(self, tmp_path):
+        """`data/roles` directory counts as agent-config maturity."""
+        roles_dir = tmp_path / "data" / "roles"
+        roles_dir.mkdir(parents=True)
+        (roles_dir / "coder.md").write_text("# Coder role\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 1
+        assert any(e["path"] == "data/roles" for e in result["files"])
+        assert any(e["name"] == "Role definitions" for e in result["files"])
+
+    def test_data_roles_empty_dir_still_detected(self, tmp_path):
+        """`data/roles` as an empty directory still counts (existence-based check)."""
+        (tmp_path / "data" / "roles").mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 1
+        assert any(e["path"] == "data/roles" for e in result["files"])
+
+    def test_scripts_agents_dir_detected(self, tmp_path):
+        """`scripts/agents` directory counts as agent-config maturity."""
+        scripts_dir = tmp_path / "scripts" / "agents"
+        scripts_dir.mkdir(parents=True)
+        (scripts_dir / "deploy.sh").write_text("#!/bin/bash\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 1
+        assert any(e["path"] == "scripts/agents" for e in result["files"])
+        assert any(e["name"] == "Agent scripts" for e in result["files"])
+
+    def test_scripts_agents_empty_dir_still_detected(self, tmp_path):
+        """`scripts/agents` as an empty directory still counts (existence-based check)."""
+        (tmp_path / "scripts" / "agents").mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 1
+        assert any(e["path"] == "scripts/agents" for e in result["files"])
+
+    def test_data_agents_and_roles_accumulate(self, tmp_path):
+        """`data/agents` and `data/roles` each contribute maturity."""
+        (tmp_path / "data" / "agents").mkdir(parents=True)
+        (tmp_path / "data" / "roles").mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 2
+        paths = [e["path"] for e in result["files"]]
+        assert "data/agents" in paths
+        assert "data/roles" in paths
+
+    def test_all_three_data_dirs_accumulate(self, tmp_path):
+        """`data/agents`, `data/roles`, and `scripts/agents` each contribute maturity."""
+        (tmp_path / "data" / "agents").mkdir(parents=True)
+        (tmp_path / "data" / "roles").mkdir(parents=True)
+        (tmp_path / "scripts" / "agents").mkdir(parents=True)
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] >= 3
+        paths = [e["path"] for e in result["files"]]
+        assert "data/agents" in paths
+        assert "data/roles" in paths
+        assert "scripts/agents" in paths
+
+    def test_data_agents_suppresses_recommendation(self, tmp_path):
+        """A repo with only `data/agents` should not get the agent-config recommendation."""
+        (tmp_path / "data" / "agents").mkdir(parents=True)
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
+    def test_scripts_agents_suppresses_recommendation(self, tmp_path):
+        """A repo with only `scripts/agents` should not get the agent-config recommendation."""
+        (tmp_path / "scripts" / "agents").mkdir(parents=True)
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
     def test_lowercase_claude_md_detected(self, tmp_path):
         """`claude.md` counts as agent-config maturity."""
         (tmp_path / "claude.md").write_text("# Claude Instructions\n")
