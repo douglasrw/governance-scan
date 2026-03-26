@@ -11,7 +11,7 @@ AI governance scanner for codebases. Scores enforcement maturity, context hygien
 
 Works on **any** git repository. No API keys, no accounts, no network calls. Pure local static analysis.
 
-The output category name `CLAUDE.md Quality` is kept for compatibility, but the scanner also credits other AI guidance surfaces such as `AGENTS.md`, `GEMINI.md`, Copilot/Cursor/Claude instruction files, and scoped instruction directories.
+The output category name `CLAUDE.md Quality` is kept for compatibility, but the scanner credits AI guidance across `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, `GEMINI.md`, `.gemini/GEMINI.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md`.
 
 ## Quick Start
 
@@ -56,7 +56,7 @@ governance-scan /path/to/your/repo
 
   Top Recommendations:
     1. Add pre-commit hooks or Claude Code hooks to enforce critical rules automatically
-    2. Structure your CLAUDE.md with clear headings for rules, conventions, and constraints
+    2. Structure your primary AI guidance file with clear headings for rules, conventions, and constraints
     3. Increase test coverage -- aim for at least 1 test file per 5 source files
 
   ---
@@ -160,15 +160,16 @@ The action posts a PR comment with the scan results, including score, grade, cat
 Notes:
 
 - An empty `.github/workflows/` directory does not count as CI; the directory must contain at least one `.yml` or `.yaml` workflow file.
-- Agent-config maturity and recommendations also look at surfaces such as `.claude/settings.json`, `.claude/settings.local.json`, `data/agents`, `data/roles`, and `scripts/agents`.
+- Agent-config maturity and recommendations count the AI guidance surfaces above, plus `.claude/settings.json`, `.claude/settings.local.json`, `data/agents`, `data/roles`, and `scripts/agents`.
+- Each file under `.claude/commands/**`, `.cursor/rules/**`, and `.github/instructions/**/*.instructions.md` contributes individually to agent-config maturity.
 
 ## Scoring
 
 The overall score (0-100) is a weighted composite:
 
 - **Enforcement Maturity** (40%): Hooks, tests, rules, structure, CI, secret hygiene
-- **Context Hygiene** (30%): CLAUDE.md presence/quality, TODO debt
-- **Automation Readiness** (30%): CI, agent config, test coverage, hooks
+- **Context Hygiene** (30%): AI guidance presence/quality, TODO debt
+- **Automation Readiness** (30%): CI, agent-config maturity, test coverage, hooks
 
 Grades: A (80+), B (60-79), C (40-59), D (20-39), F (0-19).
 
