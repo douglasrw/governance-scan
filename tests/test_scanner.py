@@ -1250,7 +1250,7 @@ class TestGenerateRecommendations:
         assert len(recs) <= 3
 
     def test_agent_config_rec_does_not_displace_higher_priority(self):
-        """CLAUDE.md, hooks, tests recs should appear before agent-config when all are missing."""
+        """AI guidance, hooks, tests recs should appear before agent-config when all are missing."""
         d = self._defaults(
             claude_md={"total_lines": 0, "structured": False, "total_rules": 0},
             hooks={"l5_count": 0},
@@ -1261,8 +1261,8 @@ class TestGenerateRecommendations:
             d["claude_md"], d["hooks"], d["tests"],
             d["cicd"], d["agent_config"], d["anti_patterns"],
         )
-        # CLAUDE.md, hooks, and tests recs take the top 3 slots
-        assert "CLAUDE.md" in recs[0]
+        # AI guidance, hooks, and tests recs take the top 3 slots
+        assert "AI guidance file" in recs[0]
         assert "hook" in recs[1].lower()
         assert "test" in recs[2].lower()
         assert not any("agent configuration" in r for r in recs)
@@ -1295,6 +1295,7 @@ class TestScanRepo:
         assert "categories" in result
         assert "recommendations" in result
         assert len(result["categories"]) == 6
+        assert result["categories"]["claude_md"]["name"] == "AI Guidance Quality"
 
     def test_nonexistent_repo(self):
         with pytest.raises(FileNotFoundError):

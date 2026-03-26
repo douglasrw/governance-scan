@@ -410,11 +410,19 @@ def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
     recs = []
 
     if claude_md["total_lines"] == 0:
-        recs.append("Add a CLAUDE.md with project structure, key rules, and enforcement requirements")
+        recs.append(
+            "Add an AI guidance file (AGENTS.md, CLAUDE.md, GEMINI.md, or equivalent) "
+            "with project structure, key rules, and enforcement requirements"
+        )
     elif not claude_md["structured"]:
-        recs.append("Structure your CLAUDE.md with clear headings for rules, conventions, and constraints")
+        recs.append(
+            "Structure your primary AI guidance file with clear headings for rules, conventions, "
+            "and constraints"
+        )
     elif claude_md["total_lines"] > 500:
-        recs.append("Trim CLAUDE.md to <200 lines -- move reference material to separate files")
+        recs.append(
+            "Trim your primary AI guidance file to <200 lines -- move reference material to separate files"
+        )
 
     if anti_patterns["secrets"] > 0:
         recs.append("Remove hardcoded secrets from source code -- use environment variables instead")
@@ -466,7 +474,7 @@ def scan_repo(path: str | Path) -> dict:
     # Category breakdown
     categories = {
         "claude_md": {
-            "name": "CLAUDE.md Quality",
+            "name": "AI Guidance Quality",
             "score": min(100, (15 if claude_md["total_lines"] > 0 else 0)
                          + (10 if claude_md["structured"] else 0)
                          + min(25, claude_md["total_rules"] * 5)),
