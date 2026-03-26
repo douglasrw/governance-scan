@@ -612,6 +612,50 @@ class TestScanAgentConfig:
         assert result["maturity"] == 0
         assert len(result["files"]) == 0
 
+    def test_claude_md_detected(self, tmp_path):
+        """`CLAUDE.md` counts as agent-config maturity."""
+        (tmp_path / "CLAUDE.md").write_text("# Claude Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == "CLAUDE.md" for e in result["files"])
+
+    def test_dot_claude_claude_md_detected(self, tmp_path):
+        """`.claude/CLAUDE.md` counts as agent-config maturity."""
+        claude_dir = tmp_path / ".claude"
+        claude_dir.mkdir()
+        (claude_dir / "CLAUDE.md").write_text("# Claude Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".claude/CLAUDE.md" for e in result["files"])
+
+    def test_gemini_md_detected(self, tmp_path):
+        """`GEMINI.md` counts as agent-config maturity."""
+        (tmp_path / "GEMINI.md").write_text("# Gemini Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == "GEMINI.md" for e in result["files"])
+
+    def test_dot_gemini_gemini_md_detected(self, tmp_path):
+        """`.gemini/GEMINI.md` counts as agent-config maturity."""
+        gemini_dir = tmp_path / ".gemini"
+        gemini_dir.mkdir()
+        (gemini_dir / "GEMINI.md").write_text("# Gemini Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".gemini/GEMINI.md" for e in result["files"])
+
+    def test_claude_and_gemini_instruction_files_accumulate_maturity(self, tmp_path):
+        """Claude and Gemini instruction files each contribute maturity."""
+        (tmp_path / "CLAUDE.md").write_text("# Claude Instructions\n")
+        gemini_dir = tmp_path / ".gemini"
+        gemini_dir.mkdir()
+        (gemini_dir / "GEMINI.md").write_text("# Gemini Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert "CLAUDE.md" in paths
+        assert ".gemini/GEMINI.md" in paths
+
     def test_claude_settings_json(self, tmp_path):
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
         claude_dir = tmp_path / ".claude"
