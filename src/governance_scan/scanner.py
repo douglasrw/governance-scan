@@ -62,14 +62,14 @@ def scan_claude_md(repo: Path) -> dict:
     # .cursor/rules directory (Cursor IDE rule files)
     cursor_rules_dir = repo / ".cursor" / "rules"
     if cursor_rules_dir.is_dir():
-        for rule_file in sorted(cursor_rules_dir.iterdir()):
+        for rule_file in sorted(cursor_rules_dir.rglob("*")):
             if not rule_file.is_file():
                 continue
             try:
                 text = rule_file.read_text(errors="ignore")
             except Exception:
                 continue
-            _ingest(text, f".cursor/rules/{rule_file.name}")
+            _ingest(text, rule_file.relative_to(repo).as_posix())
 
     # .github/instructions/**/*.instructions.md (GitHub instruction files, including scoped subfolders)
     instructions_dir = repo / ".github" / "instructions"
@@ -278,9 +278,9 @@ def scan_agent_config(repo: Path) -> dict:
     # .cursor/rules directory (Cursor IDE rule files)
     cursor_rules_dir = repo / ".cursor" / "rules"
     if cursor_rules_dir.is_dir():
-        for f in sorted(cursor_rules_dir.iterdir()):
+        for f in sorted(cursor_rules_dir.rglob("*")):
             if f.is_file():
-                rel = f".cursor/rules/{f.name}"
+                rel = f.relative_to(repo).as_posix()
                 results["files"].append({"path": rel, "name": "Cursor rules"})
                 results["maturity"] += 1
 

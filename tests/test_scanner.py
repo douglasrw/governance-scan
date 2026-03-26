@@ -163,6 +163,16 @@ class TestScanClaudeMd:
         assert len(result["files"]) == 2
         assert result["total_rules"] == 2
 
+    def test_cursor_rules_nested_files(self, tmp_path):
+        """Nested files in .cursor/rules contribute to totals."""
+        rules_dir = tmp_path / ".cursor" / "rules" / "backend"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "api.mdc").write_text("- Must validate inputs\n")
+        result = scan_claude_md(tmp_path)
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == ".cursor/rules/backend/api.mdc"
+        assert result["total_rules"] == 1
+
     def test_cursor_rules_combined_with_claude_md(self, tmp_path):
         """Both CLAUDE.md and .cursor/rules contribute to totals."""
         (tmp_path / "CLAUDE.md").write_text("# Rules\n\n## Style\n\n## Tests\n\n- Must lint\n")
@@ -595,6 +605,15 @@ class TestScanAgentConfig:
         paths = [e["path"] for e in result["files"]]
         assert ".cursor/rules/a.mdc" in paths
         assert ".cursor/rules/b.mdc" in paths
+
+    def test_cursor_rules_nested_files_detected(self, tmp_path):
+        """Nested files in `.cursor/rules/` count as agent-config maturity."""
+        rules_dir = tmp_path / ".cursor" / "rules" / "frontend"
+        rules_dir.mkdir(parents=True)
+        (rules_dir / "ui.mdc").write_text("# UI\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == ".cursor/rules/frontend/ui.mdc" for e in result["files"])
 
     def test_cursor_rules_suppresses_recommendation(self, tmp_path):
         """A repo with only `.cursor/rules/*` should not get the agent-config recommendation."""
