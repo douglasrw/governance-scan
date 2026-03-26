@@ -71,6 +71,18 @@ def scan_claude_md(repo: Path) -> dict:
                 continue
             _ingest(text, f".cursor/rules/{rule_file.name}")
 
+    # .github/instructions/*.instructions.md (top-level GitHub instruction files)
+    instructions_dir = repo / ".github" / "instructions"
+    if instructions_dir.is_dir():
+        for instruction_file in sorted(instructions_dir.iterdir()):
+            if not (instruction_file.is_file() and instruction_file.name.endswith(".instructions.md")):
+                continue
+            try:
+                text = instruction_file.read_text(errors="ignore")
+            except Exception:
+                continue
+            _ingest(text, f".github/instructions/{instruction_file.name}")
+
     return results
 
 

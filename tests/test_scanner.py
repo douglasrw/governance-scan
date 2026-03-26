@@ -181,6 +181,44 @@ class TestScanClaudeMd:
         assert result["total_lines"] == 0
         assert len(result["files"]) == 0
 
+    def test_github_instructions_counted_as_guidance(self, tmp_path):
+        """.github/instructions/*.instructions.md contributes governance guidance credit."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "code-review.instructions.md").write_text(
+            "# Code Review\n\n"
+            "## Scope\n\n"
+            "## Checks\n\n"
+            "- Must review tests\n"
+            "- Never ignore regressions\n"
+        )
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] > 0
+        assert len(result["files"]) == 1
+        assert result["files"][0]["path"] == ".github/instructions/code-review.instructions.md"
+        assert result["structured"] is True
+        assert result["total_rules"] == 2
+
+    def test_github_instructions_multiple_files(self, tmp_path):
+        """Multiple top-level GitHub instruction files each contribute to totals."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        inst_dir.mkdir(parents=True)
+        (inst_dir / "code-review.instructions.md").write_text("- Must review tests\n")
+        (inst_dir / "testing.instructions.md").write_text("- Always run CI\n")
+        result = scan_claude_md(tmp_path)
+        assert len(result["files"]) == 2
+        assert result["total_rules"] == 2
+
+    def test_github_instructions_nested_dirs_ignored(self, tmp_path):
+        """Nested directories under .github/instructions/ are not counted."""
+        inst_dir = tmp_path / ".github" / "instructions"
+        (inst_dir / "nested").mkdir(parents=True)
+        (inst_dir / "nested" / "code-review.instructions.md").write_text("- Must review tests\n")
+        result = scan_claude_md(tmp_path)
+        assert result["total_lines"] == 0
+        assert result["total_rules"] == 0
+        assert len(result["files"]) == 0
+
     def test_no_agents_md_no_claude_md(self, empty_repo):
         """Repo with neither AGENTS.md nor CLAUDE.md remains negative."""
         result = scan_claude_md(empty_repo)
