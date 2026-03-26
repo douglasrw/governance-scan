@@ -417,7 +417,8 @@ def generate_recommendations(claude_md: dict, hooks: dict, tests: dict,
 
     if claude_md["total_lines"] == 0:
         recs.append(
-            "Add an AI guidance file (AGENTS.md, CLAUDE.md, GEMINI.md, or equivalent) "
+            "Add an AI guidance file (CLAUDE.md, AGENTS.md, GEMINI.md, .cursorrules, "
+            "or equivalent -- lowercase filenames like claude.md are also recognized) "
             "with project structure, key rules, and enforcement requirements"
         )
     elif not claude_md["structured"]:

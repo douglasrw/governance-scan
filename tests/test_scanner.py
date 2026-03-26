@@ -1333,6 +1333,31 @@ class TestGenerateRecommendations:
         assert "test" in recs[2].lower()
         assert not any("agent configuration" in r for r in recs)
 
+    def test_ai_guidance_rec_mentions_lowercase_filenames(self):
+        """AI guidance recommendation copy references lowercase filename variants."""
+        d = self._defaults(
+            claude_md={"total_lines": 0, "structured": False, "total_rules": 0},
+        )
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        guidance_rec = recs[0]
+        assert "claude.md" in guidance_rec
+        assert "lowercase" in guidance_rec.lower()
+
+    def test_ai_guidance_rec_mentions_equivalent_surfaces(self):
+        """AI guidance recommendation copy references equivalent guidance surfaces."""
+        d = self._defaults(
+            claude_md={"total_lines": 0, "structured": False, "total_rules": 0},
+        )
+        recs = generate_recommendations(
+            d["claude_md"], d["hooks"], d["tests"],
+            d["cicd"], d["agent_config"], d["anti_patterns"],
+        )
+        guidance_rec = recs[0]
+        assert ".cursorrules" in guidance_rec
+
     def test_secrets_recommendation_high_priority(self):
         """Secret removal recommendation appears when secrets are found, even with other gaps."""
         d = self._defaults(
