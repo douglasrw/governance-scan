@@ -27,6 +27,14 @@ _CODE_EXTENSIONS = {
     ".java", ".kt", ".swift", ".cs", ".cpp", ".c", ".h",
 }
 
+_TEST_ONLY_EXTENSIONS = {".mts", ".cts", ".mjs", ".cjs"}
+_TEST_DISCOVERY_EXTENSIONS = _CODE_EXTENSIONS | _TEST_ONLY_EXTENSIONS
+_TEST_ONLY_PATTERNS = [
+    pattern
+    for ext in sorted(_TEST_ONLY_EXTENSIONS)
+    for pattern in (f"test_*{ext}", f"*_test{ext}")
+]
+
 
 def _should_skip(path: Path) -> bool:
     return any(part in _SKIP_DIRS for part in path.parts)
@@ -184,13 +192,13 @@ def scan_tests(repo: Path) -> dict:
         if test_path.exists():
             results["test_dirs_found"].append(td)
             for f in test_path.rglob("*"):
-                if f.is_file() and f.suffix in _CODE_EXTENSIONS and not _should_skip(f):
+                if f.is_file() and f.suffix in _TEST_DISCOVERY_EXTENSIONS and not _should_skip(f):
                     seen.add(f)
                     if f.name != "__init__.py":
                         results["test_files"] += 1
 
     # Test files scattered in codebase
-    test_patterns = ["test_*.py", "*_test.py", "*.spec.*", "*.test.*"]
+    test_patterns = ["test_*.py", "*_test.py", "*.spec.*", "*.test.*", *_TEST_ONLY_PATTERNS]
     for pattern in test_patterns:
         for f in repo.rglob(pattern):
             if f.is_file() and f not in seen and not _should_skip(f):
@@ -199,7 +207,7 @@ def scan_tests(repo: Path) -> dict:
 
     # Node-style single-entrypoint test files (e.g. src/test.ts)
     for f in repo.rglob("test.*"):
-        if (f.is_file() and f.stem == "test" and f.suffix in _CODE_EXTENSIONS
+        if (f.is_file() and f.stem == "test" and f.suffix in _TEST_DISCOVERY_EXTENSIONS
                 and f not in seen and not _should_skip(f)):
             seen.add(f)
             results["test_files"] += 1

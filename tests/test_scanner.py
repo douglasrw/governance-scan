@@ -468,6 +468,24 @@ class TestScanTests:
         result = scan_tests(tmp_path)
         assert result["test_files"] == 1
 
+    @pytest.mark.parametrize("ext", [".mts", ".cts", ".mjs", ".cjs"])
+    def test_mixed_module_test_files_count_without_source_inflation(self, tmp_path, ext):
+        """Mixed-module test files count as tests without changing source counts."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / f"example{ext}").write_text("test\n")
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / f"case_test{ext}").write_text("test\n")
+        (src / f"test{ext}").write_text("test\n")
+        (src / f"app{ext}").write_text("export const x = 1\n")
+
+        result = scan_tests(tmp_path)
+
+        assert result["test_files"] == 3
+        assert result["source_files"] == 0
+
 
 class TestScanCicd:
     def test_no_ci(self, empty_repo):
