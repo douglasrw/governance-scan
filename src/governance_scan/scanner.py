@@ -189,7 +189,7 @@ def scan_hooks(repo: Path) -> dict:
 
 def scan_tests(repo: Path) -> dict:
     """Count test files and estimate coverage."""
-    test_dirs = ["tests", "test", "__tests__", "spec"]
+    test_dirs = ["tests", "test", "__tests__", "spec", "e2e"]
     results = {"test_files": 0, "test_dirs_found": [], "source_files": 0}
 
     seen = set()

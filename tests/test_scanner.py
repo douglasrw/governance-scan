@@ -442,6 +442,22 @@ class TestScanTests:
         assert result["test_files"] >= 2
         assert "tests" in result["test_dirs_found"]
 
+    def test_e2e_directory_counted_as_test_dir(self, tmp_path):
+        """An e2e directory counts as a test directory without relying on filename patterns."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        e2e_dir = tmp_path / "e2e"
+        e2e_dir.mkdir()
+        (e2e_dir / "smoke.ts").write_text("export const run = true\n")
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.ts").write_text("export const app = true\n")
+
+        result = scan_tests(tmp_path)
+
+        assert "e2e" in result["test_dirs_found"]
+        assert result["test_files"] == 1
+        assert result["source_files"] == 1
+
     def test_node_style_src_test_ts(self, tmp_path):
         """A repo with src/test.ts should count one test file."""
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
