@@ -1044,6 +1044,21 @@ class TestScanAgentConfig:
         )
         assert not any("agent configuration" in r for r in recs)
 
+    def test_data_roles_suppresses_recommendation(self, tmp_path):
+        """A repo with only `data/roles` should not get the agent-config recommendation."""
+        (tmp_path / "data" / "roles").mkdir(parents=True)
+        agent_config = scan_agent_config(tmp_path)
+        assert agent_config["maturity"] >= 1
+        recs = generate_recommendations(
+            {"total_lines": 50, "structured": True, "total_rules": 5},
+            {"l5_count": 2},
+            {"test_files": 10, "source_files": 20},
+            {"has_ci": True},
+            agent_config,
+            {"secrets": 0, "todos": 5},
+        )
+        assert not any("agent configuration" in r for r in recs)
+
     def test_scripts_agents_suppresses_recommendation(self, tmp_path):
         """A repo with only `scripts/agents` should not get the agent-config recommendation."""
         (tmp_path / "scripts" / "agents").mkdir(parents=True)
