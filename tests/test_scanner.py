@@ -956,6 +956,47 @@ class TestScanAgentConfig:
         )
         assert not any("agent configuration" in r for r in recs)
 
+    def test_lowercase_claude_md_detected(self, tmp_path):
+        """`claude.md` counts as agent-config maturity."""
+        (tmp_path / "claude.md").write_text("# Claude Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == "claude.md" for e in result["files"])
+
+    def test_lowercase_agents_md_detected(self, tmp_path):
+        """`agents.md` counts as agent-config maturity."""
+        (tmp_path / "agents.md").write_text("# Agents\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == "agents.md" for e in result["files"])
+
+    def test_lowercase_gemini_md_detected(self, tmp_path):
+        """`gemini.md` counts as agent-config maturity."""
+        (tmp_path / "gemini.md").write_text("# Gemini Instructions\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 1
+        assert any(e["path"] == "gemini.md" for e in result["files"])
+
+    def test_lowercase_and_uppercase_both_count(self, tmp_path):
+        """Both `CLAUDE.md` and `claude.md` each contribute maturity."""
+        (tmp_path / "CLAUDE.md").write_text("# Upper\n")
+        (tmp_path / "claude.md").write_text("# Lower\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert "CLAUDE.md" in paths
+        assert "claude.md" in paths
+
+    def test_lowercase_agents_and_gemini_accumulate(self, tmp_path):
+        """Lowercase `agents.md` and `gemini.md` each contribute maturity."""
+        (tmp_path / "agents.md").write_text("# Agents\n")
+        (tmp_path / "gemini.md").write_text("# Gemini\n")
+        result = scan_agent_config(tmp_path)
+        assert result["maturity"] == 2
+        paths = [e["path"] for e in result["files"]]
+        assert "agents.md" in paths
+        assert "gemini.md" in paths
+
 
 class TestScanAntiPatterns:
     def test_clean_repo(self, empty_repo):
