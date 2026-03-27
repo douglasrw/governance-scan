@@ -619,6 +619,15 @@ class TestScanCicd:
         names = [c["name"] for c in result["configs"]]
         assert "Docker Compose" in names
 
+    def test_dockerfile_detected(self, tmp_path):
+        """A standalone Dockerfile should be detected as a Docker CI signal."""
+        subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
+        (tmp_path / "Dockerfile").write_text("FROM python:3.12-slim\nCOPY . /app\n")
+        result = scan_cicd(tmp_path)
+        assert result["has_ci"] is True
+        names = [c["name"] for c in result["configs"]]
+        assert "Docker" in names
+
     def test_npm_typecheck_and_type_check(self, tmp_path):
         """Both 'typecheck' and 'type-check' variants should be recognized."""
         subprocess.run(["git", "init", str(tmp_path)], capture_output=True)
